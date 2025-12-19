@@ -8,20 +8,20 @@
 import AppKit
 
 enum NotchStyle: String, Codable, CaseIterable {
-    case `default`
-    case neat
+    case laptop
+    case display
 
     var displayName: String {
         switch self {
-        case .default: return "Default"
-        case .neat: return "Neat"
+        case .laptop: return "Laptop Notch"
+        case .display: return "External Display"
         }
     }
 
     var sublabel: String {
         switch self {
-        case .default: return "Physical Notch"
-        case .neat: return "Menu Bar Height"
+        case .laptop: return "Physical Notch"
+        case .display: return "Menu Bar Height"
         }
     }
 }
@@ -31,13 +31,13 @@ extension NSScreen {
 
     /// Returns the size of the notch on this screen (pixel-perfect using macOS APIs)
     var notchSize: CGSize {
-        notchSize(for: .default)
+        notchSize(for: .laptop)
     }
 
     /// Returns the size of the notch for a given style
     func notchSize(for style: NotchStyle) -> CGSize {
         switch style {
-        case .neat:
+        case .display:
             let fullWidth = frame.width
             let leftPadding = auxiliaryTopLeftArea?.width ?? 0
             let rightPadding = auxiliaryTopRightArea?.width ?? 0
@@ -49,7 +49,7 @@ extension NSScreen {
                 return CGSize(width: 180, height: NSScreen.menuBarHeight)
             }
 
-        case .default:
+        case .laptop:
             guard safeAreaInsets.top > 0 else {
                 return CGSize(width: 224, height: 38)
             }

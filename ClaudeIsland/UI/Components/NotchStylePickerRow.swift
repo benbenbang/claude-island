@@ -63,17 +63,17 @@ struct NotchStylePickerRow: View {
             if isExpanded {
                 VStack(spacing: 2) {
                     NotchStyleOptionRow(
-                        style: .default,
-                        isSelected: selectedStyle == .default
+                        style: .laptop,
+                        isSelected: selectedStyle == .laptop
                     ) {
-                        selectStyle(.default)
+                        selectStyle(.laptop)
                     }
 
                     NotchStyleOptionRow(
-                        style: .neat,
-                        isSelected: selectedStyle == .neat
+                        style: .display,
+                        isSelected: selectedStyle == .display
                     ) {
-                        selectStyle(.neat)
+                        selectStyle(.display)
                     }
                 }
                 .padding(.leading, 28)
@@ -86,12 +86,7 @@ struct NotchStylePickerRow: View {
     }
 
     private var currentSelectionLabel: String {
-        switch selectedStyle {
-        case .default:
-            return "Default"
-        case .neat:
-            return "Neat"
-        }
+        selectedStyle.displayName
     }
 
     private var textColor: Color {
