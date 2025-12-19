@@ -114,8 +114,9 @@ struct NotchView: View {
 
     // MARK: - Corner Radii
 
+    /// Auto-select corner radius based on whether screen has physical notch
     private var cornerRadiusInsets: (opened: (top: CGFloat, bottom: CGFloat), closed: (top: CGFloat, bottom: CGFloat)) {
-        AppSettings.notchStyle == .display ? cornerRadiusInsetsDisplay : cornerRadiusInsetsLaptop
+        viewModel.hasPhysicalNotch ? cornerRadiusInsetsLaptop : cornerRadiusInsetsDisplay
     }
 
     private var topCornerRadius: CGFloat {
