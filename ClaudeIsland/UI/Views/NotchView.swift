@@ -9,14 +9,14 @@ import AppKit
 import CoreGraphics
 import SwiftUI
 
-// Corner radius constants for default (physical notch)
-private let cornerRadiusInsetsDefault = (
+// Corner radius constants for laptop (physical notch)
+private let cornerRadiusInsetsLaptop = (
     opened: (top: CGFloat(19), bottom: CGFloat(24)),
     closed: (top: CGFloat(6), bottom: CGFloat(14))
 )
 
-// Corner radius constants for neat (menu bar height)
-private let cornerRadiusInsetsNeat = (
+// Corner radius constants for display (menu bar height)
+private let cornerRadiusInsetsDisplay = (
     opened: (top: CGFloat(19), bottom: CGFloat(24)),
     closed: (top: CGFloat(4), bottom: CGFloat(8))
 )
@@ -115,7 +115,7 @@ struct NotchView: View {
     // MARK: - Corner Radii
 
     private var cornerRadiusInsets: (opened: (top: CGFloat, bottom: CGFloat), closed: (top: CGFloat, bottom: CGFloat)) {
-        AppSettings.notchStyle == .neat ? cornerRadiusInsetsNeat : cornerRadiusInsetsDefault
+        AppSettings.notchStyle == .display ? cornerRadiusInsetsDisplay : cornerRadiusInsetsLaptop
     }
 
     private var topCornerRadius: CGFloat {

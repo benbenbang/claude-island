@@ -59,12 +59,12 @@ enum AppSettings {
 
     // MARK: - Notch Style
 
-    /// The visual style of the notch (default physical notch or neat menu bar height)
+    /// The visual style of the notch (laptop physical notch or external display menu bar height)
     static var notchStyle: NotchStyle {
         get {
             guard let rawValue = defaults.string(forKey: Keys.notchStyle),
                   let style = NotchStyle(rawValue: rawValue) else {
-                return .neat
+                return .display
             }
             return style
         }
