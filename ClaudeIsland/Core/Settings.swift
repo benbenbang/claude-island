@@ -38,7 +38,6 @@ enum AppSettings {
 
     private enum Keys {
         static let notificationSound = "notificationSound"
-        static let notchStyle = "notchStyle"
     }
 
     // MARK: - Notification Sound
@@ -54,22 +53,6 @@ enum AppSettings {
         }
         set {
             defaults.set(newValue.rawValue, forKey: Keys.notificationSound)
-        }
-    }
-
-    // MARK: - Notch Style
-
-    /// The visual style of the notch (laptop physical notch or external display menu bar height)
-    static var notchStyle: NotchStyle {
-        get {
-            guard let rawValue = defaults.string(forKey: Keys.notchStyle),
-                  let style = NotchStyle(rawValue: rawValue) else {
-                return .display
-            }
-            return style
-        }
-        set {
-            defaults.set(newValue.rawValue, forKey: Keys.notchStyle)
         }
     }
 }
