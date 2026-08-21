@@ -3,25 +3,36 @@ NAME = claude-island
 BUILD_DIR = build
 ARCHIVE_PATH = $(BUILD_DIR)/ClaudeIsland.xcarchive
 EXPORT_PATH = $(BUILD_DIR)/export
+OUTPUT_DIR = export
+APP_NAME = Claude Island.app
 
 .PHONY: build
-## Build claude island
+## Build claude island (output copied to export/)
 build:
 	@echo "Building Claude Island... 🐙"
 	@xcodebuild -resolvePackageDependencies -scheme ClaudeIsland 2>/dev/null || true
 	@xcodebuild -scheme ClaudeIsland -configuration Release build
+	@echo "Copying app to $(OUTPUT_DIR)/ ..."
+	@mkdir -p "$(OUTPUT_DIR)"
+	@rm -rf "$(OUTPUT_DIR)/$(APP_NAME)"
+	@cp -R "$$(find ~/Library/Developer/Xcode/DerivedData/ClaudeIsland-*/Build/Products/Release -name "$(APP_NAME)" -type d -maxdepth 1 | head -1)" "$(OUTPUT_DIR)/"
+	@echo "✅ Build output: $(OUTPUT_DIR)/$(APP_NAME)"
 
 .PHONY: run
 ## Build and run the app
 run: build
 	@echo "Launching Claude Island..."
-	@open ~/Library/Developer/Xcode/DerivedData/ClaudeIsland-*/Build/Products/Release/Claude\ Island.app
+	@open "$(OUTPUT_DIR)/$(APP_NAME)"
 
 .PHONY: show
 ## Show location of built app
 show:
 	@echo "Built app location:"
-	@find ~/Library/Developer/Xcode/DerivedData/ClaudeIsland-*/Build/Products/Release -name "Claude Island.app" -type d -maxdepth 1 2>/dev/null || echo "App not built yet. Run 'make build' first."
+	@if [ -d "$(OUTPUT_DIR)/$(APP_NAME)" ]; then \
+		echo "$(OUTPUT_DIR)/$(APP_NAME)"; \
+	else \
+		echo "App not built yet. Run 'make build' first."; \
+	fi
 
 .PHONY: archive
 ## Create exportable app bundle in build/export/
