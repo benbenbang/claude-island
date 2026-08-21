@@ -42,7 +42,9 @@ struct HookInstaller {
         }
 
         let python = detectPython()
-        let command = "\(python) ~/.claude/hooks/claude-island-state.py"
+        // Canonical command uses $HOME (not a realpath) so the same settings.json
+        // is portable across machines/users.
+        let command = "\(python) $HOME/.claude/hooks/claude-island-state.py"
         let hookEntry: [[String: Any]] = [["type": "command", "command": command]]
         let hookEntryWithTimeout: [[String: Any]] = [["type": "command", "command": command, "timeout": 86400]]
         let withMatcher: [[String: Any]] = [["matcher": "*", "hooks": hookEntry]]
@@ -54,6 +56,35 @@ struct HookInstaller {
         ]
 
         var hooks = json["hooks"] as? [String: Any] ?? [:]
+        var changed = false
+
+        // Migration: normalize any previously-installed command (e.g. an absolute
+        // realpath written by an older build) to the canonical $HOME form. This
+        // sweeps EVERY event already present in the file, not just the ones we
+        // register below, so stale entries on other events get fixed too.
+        for event in Array(hooks.keys) {
+            guard var entries = hooks[event] as? [[String: Any]] else { continue }
+            var entriesChanged = false
+            for i in entries.indices {
+                guard var entryHooks = entries[i]["hooks"] as? [[String: Any]] else { continue }
+                var entryHooksChanged = false
+                for j in entryHooks.indices {
+                    guard let cmd = entryHooks[j]["command"] as? String,
+                          cmd.contains("claude-island-state.py"),
+                          cmd != command else { continue }
+                    entryHooks[j]["command"] = command
+                    entryHooksChanged = true
+                }
+                if entryHooksChanged {
+                    entries[i]["hooks"] = entryHooks
+                    entriesChanged = true
+                }
+            }
+            if entriesChanged {
+                hooks[event] = entries
+                changed = true
+            }
+        }
 
         let hookEvents: [(String, [[String: Any]])] = [
             ("UserPromptSubmit", withoutMatcher),
@@ -82,11 +113,18 @@ struct HookInstaller {
                 if !hasOurHook {
                     existingEvent.append(contentsOf: config)
                     hooks[event] = existingEvent
+                    changed = true
                 }
             } else {
                 hooks[event] = config
+                changed = true
             }
         }
+
+        // Only rewrite settings.json when we actually added or migrated a hook.
+        // Avoids reserializing (and reordering) the user's unrelated config on
+        // every launch when nothing needs to change.
+        guard changed else { return }
 
         json["hooks"] = hooks
 

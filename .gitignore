@@ -42,3 +42,6 @@ releases/
 # Xcode backup
 *.xcodeproj.backup/
 CLAUDE.md
+
+# Local build output
+export/
