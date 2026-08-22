@@ -7,9 +7,9 @@
 
 import ApplicationServices
 import Combine
-import SwiftUI
 import ServiceManagement
 import Sparkle
+import SwiftUI
 
 // MARK: - NotchMenuView
 
@@ -26,7 +26,7 @@ struct NotchMenuView: View {
             // Back button
             MenuRow(
                 icon: "chevron.left",
-                label: "Back"
+                label: "Back",
             ) {
                 viewModel.toggleMenu()
             }
@@ -47,7 +47,7 @@ struct NotchMenuView: View {
             MenuToggleRow(
                 icon: "power",
                 label: "Launch at Login",
-                isOn: launchAtLogin
+                isOn: launchAtLogin,
             ) {
                 do {
                     if launchAtLogin {
@@ -65,7 +65,7 @@ struct NotchMenuView: View {
             MenuToggleRow(
                 icon: "arrow.triangle.2.circlepath",
                 label: "Hooks",
-                isOn: hooksInstalled
+                isOn: hooksInstalled,
             ) {
                 if hooksInstalled {
                     HookInstaller.uninstall()
@@ -87,9 +87,9 @@ struct NotchMenuView: View {
 
             MenuRow(
                 icon: "star",
-                label: "Star on GitHub"
+                label: "Star on GitHub",
             ) {
-                if let url = URL(string: "https://github.com/farouqaldori/claude-island") {
+                if let url = URL(string: "https://github.com/benbenbang/claude-island") {
                     NSWorkspace.shared.open(url)
                 }
             }
@@ -101,7 +101,7 @@ struct NotchMenuView: View {
             MenuRow(
                 icon: "xmark.circle",
                 label: "Quit",
-                isDestructive: true
+                isDestructive: true,
             ) {
                 NSApplication.shared.terminate(nil)
             }
@@ -175,7 +175,7 @@ struct UpdateRow: View {
             .padding(.vertical, 10)
             .background(
                 RoundedRectangle(cornerRadius: 8)
-                    .fill(isHovered && isInteractive ? Color.white.opacity(0.08) : Color.clear)
+                    .fill(isHovered && isInteractive ? Color.white.opacity(0.08) : Color.clear),
             )
         }
         .buttonStyle(.plain)
@@ -209,7 +209,7 @@ struct UpdateRow: View {
                 .scaleEffect(0.5)
                 .frame(width: 12, height: 12)
 
-        case .found(let version, _):
+        case let .found(version, _):
             HStack(spacing: 6) {
                 Circle()
                     .fill(TerminalColors.green)
@@ -219,7 +219,7 @@ struct UpdateRow: View {
                     .foregroundColor(TerminalColors.green)
             }
 
-        case .downloading(let progress):
+        case let .downloading(progress):
             HStack(spacing: 8) {
                 ProgressView(value: progress)
                     .frame(width: 60)
@@ -230,7 +230,7 @@ struct UpdateRow: View {
                     .frame(width: 32, alignment: .trailing)
             }
 
-        case .extracting(let progress):
+        case let .extracting(progress):
             HStack(spacing: 8) {
                 ProgressView(value: progress)
                     .frame(width: 60)
@@ -241,7 +241,7 @@ struct UpdateRow: View {
                     .frame(width: 32, alignment: .trailing)
             }
 
-        case .readyToInstall(let version):
+        case let .readyToInstall(version):
             HStack(spacing: 6) {
                 Circle()
                     .fill(TerminalColors.green)
@@ -263,89 +263,89 @@ struct UpdateRow: View {
     private var icon: String {
         switch updateManager.state {
         case .idle:
-            return "arrow.down.circle"
+            "arrow.down.circle"
         case .checking:
-            return "arrow.down.circle"
+            "arrow.down.circle"
         case .upToDate:
-            return "checkmark.circle.fill"
+            "checkmark.circle.fill"
         case .found:
-            return "arrow.down.circle.fill"
+            "arrow.down.circle.fill"
         case .downloading:
-            return "arrow.down.circle"
+            "arrow.down.circle"
         case .extracting:
-            return "doc.zipper"
+            "doc.zipper"
         case .readyToInstall:
-            return "checkmark.circle.fill"
+            "checkmark.circle.fill"
         case .installing:
-            return "gear"
+            "gear"
         case .error:
-            return "exclamationmark.circle"
+            "exclamationmark.circle"
         }
     }
 
     private var iconColor: Color {
         switch updateManager.state {
         case .idle:
-            return .white.opacity(isHovered ? 1.0 : 0.7)
+            .white.opacity(isHovered ? 1.0 : 0.7)
         case .checking:
-            return .white.opacity(0.7)
+            .white.opacity(0.7)
         case .upToDate:
-            return TerminalColors.green
+            TerminalColors.green
         case .found, .readyToInstall:
-            return TerminalColors.green
+            TerminalColors.green
         case .downloading:
-            return TerminalColors.blue
+            TerminalColors.blue
         case .extracting:
-            return TerminalColors.amber
+            TerminalColors.amber
         case .installing:
-            return TerminalColors.blue
+            TerminalColors.blue
         case .error:
-            return Color(red: 1.0, green: 0.4, blue: 0.4)
+            Color(red: 1.0, green: 0.4, blue: 0.4)
         }
     }
 
     private var label: String {
         switch updateManager.state {
         case .idle:
-            return "Check for Updates"
+            "Check for Updates"
         case .checking:
-            return "Checking..."
+            "Checking..."
         case .upToDate:
-            return "Check for Updates"
+            "Check for Updates"
         case .found:
-            return "Download Update"
+            "Download Update"
         case .downloading:
-            return "Downloading..."
+            "Downloading..."
         case .extracting:
-            return "Extracting..."
+            "Extracting..."
         case .readyToInstall:
-            return "Install & Relaunch"
+            "Install & Relaunch"
         case .installing:
-            return "Installing..."
+            "Installing..."
         case .error:
-            return "Update failed"
+            "Update failed"
         }
     }
 
     private var labelColor: Color {
         switch updateManager.state {
         case .idle, .upToDate:
-            return .white.opacity(isHovered ? 1.0 : 0.7)
+            .white.opacity(isHovered ? 1.0 : 0.7)
         case .checking, .downloading, .extracting, .installing:
-            return .white.opacity(0.9)
+            .white.opacity(0.9)
         case .found, .readyToInstall:
-            return TerminalColors.green
+            TerminalColors.green
         case .error:
-            return Color(red: 1.0, green: 0.4, blue: 0.4)
+            Color(red: 1.0, green: 0.4, blue: 0.4)
         }
     }
 
     private var isInteractive: Bool {
         switch updateManager.state {
         case .idle, .upToDate, .found, .readyToInstall, .error:
-            return true
+            true
         case .checking, .downloading, .extracting, .installing:
-            return false
+            false
         }
     }
 
@@ -409,7 +409,7 @@ struct AccessibilityRow: View {
                         .padding(.vertical, 4)
                         .background(
                             RoundedRectangle(cornerRadius: 5)
-                                .fill(Color.white)
+                                .fill(Color.white),
                         )
                 }
                 .buttonStyle(.plain)
@@ -419,7 +419,7 @@ struct AccessibilityRow: View {
         .padding(.vertical, 10)
         .background(
             RoundedRectangle(cornerRadius: 8)
-                .fill(isHovered ? Color.white.opacity(0.08) : Color.clear)
+                .fill(isHovered ? Color.white.opacity(0.08) : Color.clear),
         )
         .onHover { isHovered = $0 }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
@@ -464,7 +464,7 @@ struct MenuRow: View {
             .padding(.vertical, 10)
             .background(
                 RoundedRectangle(cornerRadius: 8)
-                    .fill(isHovered ? Color.white.opacity(0.08) : Color.clear)
+                    .fill(isHovered ? Color.white.opacity(0.08) : Color.clear),
             )
         }
         .buttonStyle(.plain)
@@ -513,7 +513,7 @@ struct MenuToggleRow: View {
             .padding(.vertical, 10)
             .background(
                 RoundedRectangle(cornerRadius: 8)
-                    .fill(isHovered ? Color.white.opacity(0.08) : Color.clear)
+                    .fill(isHovered ? Color.white.opacity(0.08) : Color.clear),
             )
         }
         .buttonStyle(.plain)
