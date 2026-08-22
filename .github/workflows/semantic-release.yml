@@ -1,0 +1,251 @@
+name: semantic-release
+
+on:
+  workflow_dispatch:
+    inputs:
+      prompt:
+        description: "If you are sure to launch a new release, put the value to true."
+        default: "false"
+        required: true
+        type: choice
+        options:
+          - "true"
+          - "false"
+
+jobs:
+  semantic-release:
+    name: semantic-release
+    uses: benbenbang/reusable-workflows/.github/workflows/semantic-release.yml@main
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+      statuses: read
+      packages: read
+    secrets: inherit
+    with:
+      new_version_title: "👾 claude-island"
+
+  build-app:
+    name: build macOS app
+    needs: semantic-release
+    if: ${{ needs.semantic-release.outputs.new_release == 'true' }}
+    runs-on: macos-latest
+    timeout-minutes: 60
+    permissions:
+      contents: write
+    env:
+      SCHEME: ClaudeIsland
+      APP_NAME: Claude Island.app
+      BUILD_DIR: build
+      ARCHIVE_PATH: build/ClaudeIsland.xcarchive
+      EXPORT_PATH: build/export
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@v5
+
+      # Pin Xcode: macos-latest rotates its default, and this project relies on
+      # recent Swift concurrency build settings (MainActor default isolation).
+      # `latest-stable` avoids surprise toolchain shifts; pin an exact version
+      # once you confirm what the runner offers (`xcodes installed`).
+      - name: select xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: derive version from tag
+        id: version
+        run: |
+          TAG="${{ needs.semantic-release.outputs.new_release_tag }}"
+          VERSION="${TAG#v}"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Release tag: $TAG  ->  app version: $VERSION"
+
+      # Secrets can't be read directly in `if:` conditions, so surface presence
+      # as step outputs. If the Apple secrets aren't set on this repo, we still
+      # build (ad-hoc, unsigned) and ship a DMG rather than failing the release.
+      - name: detect signing / notarization availability
+        id: caps
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          if [ -n "$APPLE_CERTIFICATE" ]; then
+            echo "sign=true" >> "$GITHUB_OUTPUT"
+            echo "Developer ID certificate present -> signed build."
+          else
+            echo "sign=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::APPLE_CERTIFICATE not set -> ad-hoc (unsigned) build, no notarization."
+          fi
+          if [ -n "$APPLE_ID" ] && [ -n "$APPLE_PASSWORD" ] && [ -n "$APPLE_TEAM_ID" ]; then
+            echo "notarize=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "notarize=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::APPLE_ID / APPLE_PASSWORD / APPLE_TEAM_ID incomplete -> skipping notarization."
+          fi
+
+      - name: import signing certificate
+        if: steps.caps.outputs.sign == 'true'
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+        run: |
+          KEYCHAIN_PATH="$RUNNER_TEMP/app-signing.keychain-db"
+          KEYCHAIN_PASSWORD="$(openssl rand -base64 24)"
+          CERT_PATH="$RUNNER_TEMP/certificate.p12"
+
+          echo "$APPLE_CERTIFICATE" | base64 --decode > "$CERT_PATH"
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security import "$CERT_PATH" -P "$APPLE_CERTIFICATE_PASSWORD" \
+            -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security set-key-partition-list -S apple-tool:,apple:,codesign: \
+            -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH" >/dev/null
+          # Add our keychain to the search list so xcodebuild can find the identity.
+          security list-keychains -d user -s "$KEYCHAIN_PATH" login.keychain-db
+          rm -f "$CERT_PATH"
+          echo "Imported identities:"
+          security find-identity -v -p codesigning "$KEYCHAIN_PATH"
+
+      # Package.resolved is gitignored, so resolve SPM deps explicitly to avoid
+      # the swift-cmark "manifest missing" failure.
+      - name: resolve swift package dependencies
+        run: xcodebuild -resolvePackageDependencies -scheme "$SCHEME"
+
+      - name: archive
+        run: |
+          rm -rf "$BUILD_DIR"
+          COMMON=(
+            archive
+            -scheme "$SCHEME"
+            -configuration Release
+            -archivePath "$ARCHIVE_PATH"
+            -destination "generic/platform=macOS"
+            MARKETING_VERSION="${{ steps.version.outputs.version }}"
+            CURRENT_PROJECT_VERSION="${{ github.run_number }}"
+          )
+          if [ "${{ steps.caps.outputs.sign }}" = "true" ]; then
+            xcodebuild "${COMMON[@]}" \
+              ENABLE_HARDENED_RUNTIME=YES \
+              CODE_SIGN_STYLE=Manual \
+              CODE_SIGN_IDENTITY="Developer ID Application" \
+              DEVELOPMENT_TEAM="${{ secrets.APPLE_TEAM_ID }}" \
+              PROVISIONING_PROFILE_SPECIFIER=""
+          else
+            xcodebuild "${COMMON[@]}" \
+              CODE_SIGN_IDENTITY="-" \
+              CODE_SIGN_STYLE=Manual \
+              CODE_SIGNING_REQUIRED=NO \
+              CODE_SIGNING_ALLOWED=NO
+          fi
+
+      - name: export app
+        run: |
+          APP_SRC="$ARCHIVE_PATH/Products/Applications/$APP_NAME"
+          mkdir -p "$EXPORT_PATH"
+          if [ "${{ steps.caps.outputs.sign }}" = "true" ]; then
+            cat > "$BUILD_DIR/ExportOptions.plist" <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key>
+            <string>developer-id</string>
+            <key>destination</key>
+            <string>export</string>
+            <key>signingStyle</key>
+            <string>manual</string>
+            <key>teamID</key>
+            <string>${{ secrets.APPLE_TEAM_ID }}</string>
+          </dict>
+          </plist>
+          EOF
+            xcodebuild -exportArchive \
+              -archivePath "$ARCHIVE_PATH" \
+              -exportPath "$EXPORT_PATH" \
+              -exportOptionsPlist "$BUILD_DIR/ExportOptions.plist"
+          else
+            # No cert: no exportArchive (it needs one) — take the app straight
+            # from the archive.
+            rm -rf "$EXPORT_PATH/$APP_NAME"
+            cp -R "$APP_SRC" "$EXPORT_PATH/"
+          fi
+          echo "Exported: $EXPORT_PATH/$APP_NAME"
+
+      # Trust-but-verify: GENERATE_INFOPLIST_FILE is on, so confirm the injected
+      # version actually landed before it names the DMG / feeds Sparkle.
+      - name: verify app version
+        run: |
+          APP="$EXPORT_PATH/$APP_NAME"
+          GOT=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$APP/Contents/Info.plist")
+          WANT="${{ steps.version.outputs.version }}"
+          echo "CFBundleShortVersionString=$GOT (want $WANT)"
+          if [ "$GOT" != "$WANT" ]; then
+            echo "::error::App version $GOT does not match release $WANT"
+            exit 1
+          fi
+
+      # Notarize + staple the .app first, so the app extracted from the DMG
+      # verifies offline. Best-effort: a notary outage must not block the release.
+      - name: notarize + staple app (best-effort)
+        if: steps.caps.outputs.sign == 'true' && steps.caps.outputs.notarize == 'true'
+        continue-on-error: true
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          APP="$EXPORT_PATH/$APP_NAME"
+          ZIP="$BUILD_DIR/app-notarize.zip"
+          ditto -c -k --keepParent "$APP" "$ZIP"
+          xcrun notarytool submit "$ZIP" \
+            --apple-id "$APPLE_ID" --team-id "$APPLE_TEAM_ID" --password "$APPLE_PASSWORD" \
+            --wait --timeout 45m
+          xcrun stapler staple "$APP"
+          echo "✅ app notarized + stapled"
+
+      - name: create dmg
+        id: dmg
+        run: |
+          DMG="$BUILD_DIR/ClaudeIsland-${{ steps.version.outputs.version }}.dmg"
+          rm -f "$DMG"
+          hdiutil create -volname "Claude Island" \
+            -srcfolder "$EXPORT_PATH/$APP_NAME" \
+            -ov -format UDZO \
+            "$DMG"
+          echo "path=$DMG" >> "$GITHUB_OUTPUT"
+          echo "Created $DMG"
+
+      - name: notarize + staple dmg (best-effort)
+        if: steps.caps.outputs.sign == 'true' && steps.caps.outputs.notarize == 'true'
+        continue-on-error: true
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          DMG="${{ steps.dmg.outputs.path }}"
+          if xcrun notarytool submit "$DMG" \
+               --apple-id "$APPLE_ID" --team-id "$APPLE_TEAM_ID" --password "$APPLE_PASSWORD" \
+               --wait --timeout 45m; then
+            xcrun stapler staple "$DMG" && echo "✅ dmg notarized + stapled"
+          else
+            echo "::warning::DMG notarization failed/timed out — shipping signed-only. Staple later: xcrun stapler staple \"$DMG\""
+          fi
+
+      - name: upload dmg to release
+        run: |
+          DMG="${{ steps.dmg.outputs.path }}"
+          echo "Uploading: $DMG"
+          test -f "$DMG"
+          gh release upload "${{ steps.version.outputs.tag }}" \
+            --clobber \
+            --repo "${{ github.repository }}" \
+            "$DMG"
+        env:
+          GH_TOKEN: ${{ github.token }}

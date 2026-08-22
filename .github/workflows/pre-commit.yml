@@ -1,0 +1,136 @@
+name: pre-commit
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - edited
+
+permissions:
+  contents: read
+  pull-requests: write
+  packages: read
+  id-token: write
+  attestations: read
+  issues: write
+
+concurrency:
+  cancel-in-progress: true
+  group: pre-commit-${{ github.event.pull_request.number }}
+
+jobs:
+  pr-labeler:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@v4
+
+      - name: pr labeler
+        uses: actions/labeler@v5
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          configuration-path: .github/labeler.yml
+
+  check-change-files:
+    name: check-changed-files
+    outputs:
+      swift: ${{ steps.check-changes.outputs.swift_any_changed }}
+      workflows: ${{ steps.check-changes.outputs.workflows_any_changed }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: get changed Swift files
+        id: check-changes
+        uses: tj-actions/changed-files@v46.0.1
+        with:
+          files_yaml: |
+            swift:
+              - "**/*.swift"
+              - .swiftformat
+              - .swiftlint.yml
+            workflows:
+              - .pre-commit-config.yaml
+              - .github/workflows/**/*.yml
+
+  pre-commit:
+    name: pre-commit checks
+    uses: benbenbang/reusable-workflows/.github/workflows/prek.yml@main
+    permissions:
+      contents: read
+      packages: read
+    secrets: inherit
+
+  swiftformat:
+    name: swiftformat
+    needs:
+      - check-change-files
+    if: needs.check-change-files.outputs.swift == 'true'
+    runs-on: macos-latest
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@v4
+
+      - name: lint swift formatting
+        run: swiftformat --lint . --reporter github-actions-log
+
+  swiftlint:
+    name: swiftlint
+    needs:
+      - check-change-files
+    if: needs.check-change-files.outputs.swift == 'true'
+    runs-on: macos-latest
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@v5
+
+      - name: install swiftlint
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: "1"
+        run: brew install swiftlint
+
+      - name: lint swift code
+        run: swiftlint lint . --no-cache --reporter github-actions-logging
+
+  workflow-pass:
+    name: workflow-passed
+    needs:
+      - check-change-files
+      - pre-commit
+      - swiftformat
+      - swiftlint
+    if: |
+      always() &&
+      needs.check-change-files.result == 'success' &&
+      needs.pre-commit.result == 'success' &&
+      (
+        (
+          needs.check-change-files.outputs.swift == 'true' &&
+          needs.swiftformat.result == 'success'
+        ) ||
+        (
+          needs.check-change-files.outputs.swift != 'true' &&
+          needs.swiftformat.result == 'skipped'
+        )
+      ) &&
+      (
+        (
+          needs.check-change-files.outputs.swift == 'true' &&
+          needs.swiftlint.result == 'success'
+        ) ||
+        (
+          needs.check-change-files.outputs.swift != 'true' &&
+          needs.swiftlint.result == 'skipped'
+        )
+      )
+    runs-on: ubuntu-latest
+    steps:
+      - name: workflow passed
+        run: echo "Workflow passed successfully 🎉"
