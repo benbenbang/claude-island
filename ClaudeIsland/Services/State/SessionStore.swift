@@ -51,58 +51,58 @@ actor SessionStore {
         Self.logger.debug("Processing: \(String(describing: event), privacy: .public)")
 
         switch event {
-        case .hookReceived(let hookEvent):
+        case let .hookReceived(hookEvent):
             await processHookEvent(hookEvent)
 
-        case .permissionApproved(let sessionId, let toolUseId):
+        case let .permissionApproved(sessionId, toolUseId):
             await processPermissionApproved(sessionId: sessionId, toolUseId: toolUseId)
 
-        case .permissionDenied(let sessionId, let toolUseId, let reason):
+        case let .permissionDenied(sessionId, toolUseId, reason):
             await processPermissionDenied(sessionId: sessionId, toolUseId: toolUseId, reason: reason)
 
-        case .permissionSocketFailed(let sessionId, let toolUseId):
+        case let .permissionSocketFailed(sessionId, toolUseId):
             await processSocketFailure(sessionId: sessionId, toolUseId: toolUseId)
 
-        case .fileUpdated(let payload):
+        case let .fileUpdated(payload):
             await processFileUpdate(payload)
 
-        case .interruptDetected(let sessionId):
+        case let .interruptDetected(sessionId):
             await processInterrupt(sessionId: sessionId)
 
-        case .clearDetected(let sessionId):
+        case let .clearDetected(sessionId):
             await processClearDetected(sessionId: sessionId)
 
-        case .sessionEnded(let sessionId):
+        case let .sessionEnded(sessionId):
             await processSessionEnd(sessionId: sessionId)
 
-        case .loadHistory(let sessionId, let cwd):
+        case let .loadHistory(sessionId, cwd):
             await loadHistoryFromFile(sessionId: sessionId, cwd: cwd)
 
-        case .historyLoaded(let sessionId, let messages, let completedTools, let toolResults, let structuredResults, let conversationInfo):
+        case let .historyLoaded(sessionId, messages, completedTools, toolResults, structuredResults, conversationInfo):
             await processHistoryLoaded(
                 sessionId: sessionId,
                 messages: messages,
                 completedTools: completedTools,
                 toolResults: toolResults,
                 structuredResults: structuredResults,
-                conversationInfo: conversationInfo
+                conversationInfo: conversationInfo,
             )
 
-        case .toolCompleted(let sessionId, let toolUseId, let result):
+        case let .toolCompleted(sessionId, toolUseId, result):
             await processToolCompleted(sessionId: sessionId, toolUseId: toolUseId, result: result)
 
         // MARK: - Subagent Events
 
-        case .subagentStarted(let sessionId, let taskToolId):
+        case let .subagentStarted(sessionId, taskToolId):
             processSubagentStarted(sessionId: sessionId, taskToolId: taskToolId)
 
-        case .subagentToolExecuted(let sessionId, let tool):
+        case let .subagentToolExecuted(sessionId, tool):
             processSubagentToolExecuted(sessionId: sessionId, tool: tool)
 
-        case .subagentToolCompleted(let sessionId, let toolId, let status):
+        case let .subagentToolCompleted(sessionId, toolId, status):
             processSubagentToolCompleted(sessionId: sessionId, toolId: toolId, status: status)
 
-        case .subagentStopped(let sessionId, let taskToolId):
+        case let .subagentStopped(sessionId, taskToolId):
             processSubagentStopped(sessionId: sessionId, taskToolId: taskToolId)
 
         case .agentFileUpdated:
@@ -176,8 +176,8 @@ actor SessionStore {
             projectName: URL(fileURLWithPath: event.cwd).lastPathComponent,
             pid: event.pid,
             tty: event.tty?.replacingOccurrences(of: "/dev/", with: ""),
-            isInTmux: false,  // Will be updated
-            phase: .idle
+            isInTmux: false, // Will be updated
+            phase: .idle,
         )
     }
 
@@ -217,9 +217,9 @@ actor SessionStore {
                             status: .running,
                             result: nil,
                             structuredResult: nil,
-                            subagentTools: []
+                            subagentTools: [],
                         )),
-                        timestamp: Date()
+                        timestamp: Date(),
                     )
                     session.chatItems.append(placeholderItem)
                     Self.logger.debug("Created placeholder tool entry for \(toolUseId.prefix(16), privacy: .public)")
@@ -231,15 +231,16 @@ actor SessionStore {
                 session.toolTracker.completeTool(id: toolUseId, success: true)
                 // Update chatItem status - tool completed (possibly approved via terminal)
                 // Only update if still waiting for approval or running
-                for i in 0..<session.chatItems.count {
+                for i in 0 ..< session.chatItems.count {
                     if session.chatItems[i].id == toolUseId,
-                       case .toolCall(var tool) = session.chatItems[i].type,
-                       tool.status == .waitingForApproval || tool.status == .running {
+                       case var .toolCall(tool) = session.chatItems[i].type,
+                       tool.status == .waitingForApproval || tool.status == .running
+                    {
                         tool.status = .success
                         session.chatItems[i] = ChatHistoryItem(
                             id: toolUseId,
                             type: .toolCall(tool),
-                            timestamp: session.chatItems[i].timestamp
+                            timestamp: session.chatItems[i].timestamp,
                         )
                         break
                     }
@@ -328,8 +329,8 @@ actor SessionStore {
             let newPhase = SessionPhase.waitingForApproval(PermissionContext(
                 toolUseId: nextPending.id,
                 toolName: nextPending.name,
-                toolInput: nil,  // We don't have the input stored in chatItems
-                receivedAt: nextPending.timestamp
+                toolInput: nil, // We don't have the input stored in chatItems
+                receivedAt: nextPending.timestamp,
             ))
             if session.phase.canTransition(to: newPhase) {
                 session.phase = newPhase
@@ -337,7 +338,7 @@ actor SessionStore {
             }
         } else {
             // No more pending tools - transition to processing
-            if case .waitingForApproval(let ctx) = session.phase, ctx.toolUseId == toolUseId {
+            if case let .waitingForApproval(ctx) = session.phase, ctx.toolUseId == toolUseId {
                 if session.phase.canTransition(to: .processing) {
                     session.phase = .processing
                 }
@@ -362,23 +363,25 @@ actor SessionStore {
 
         // Check if this tool is already completed (avoid duplicate processing)
         if let existingItem = session.chatItems.first(where: { $0.id == toolUseId }),
-           case .toolCall(let tool) = existingItem.type,
-           tool.status == .success || tool.status == .error || tool.status == .interrupted {
+           case let .toolCall(tool) = existingItem.type,
+           tool.status == .success || tool.status == .error || tool.status == .interrupted
+        {
             // Already completed, skip
             return
         }
 
         // Update the tool status
-        for i in 0..<session.chatItems.count {
+        for i in 0 ..< session.chatItems.count {
             if session.chatItems[i].id == toolUseId,
-               case .toolCall(var tool) = session.chatItems[i].type {
+               case var .toolCall(tool) = session.chatItems[i].type
+            {
                 tool.status = result.status
                 tool.result = result.result
                 tool.structuredResult = result.structuredResult
                 session.chatItems[i] = ChatHistoryItem(
                     id: toolUseId,
                     type: .toolCall(tool),
-                    timestamp: session.chatItems[i].timestamp
+                    timestamp: session.chatItems[i].timestamp,
                 )
                 Self.logger.debug("Tool \(toolUseId.prefix(12), privacy: .public) completed with status: \(String(describing: result.status), privacy: .public)")
                 break
@@ -387,13 +390,13 @@ actor SessionStore {
 
         // Update session phase if needed
         // If the completed tool was the one in the phase context, switch to next pending or processing
-        if case .waitingForApproval(let ctx) = session.phase, ctx.toolUseId == toolUseId {
+        if case let .waitingForApproval(ctx) = session.phase, ctx.toolUseId == toolUseId {
             if let nextPending = findNextPendingTool(in: session, excluding: toolUseId) {
                 let newPhase = SessionPhase.waitingForApproval(PermissionContext(
                     toolUseId: nextPending.id,
                     toolName: nextPending.name,
                     toolInput: nil,
-                    receivedAt: nextPending.timestamp
+                    receivedAt: nextPending.timestamp,
                 ))
                 session.phase = newPhase
                 Self.logger.debug("Switched to next pending tool after completion: \(nextPending.id.prefix(12), privacy: .public)")
@@ -410,15 +413,17 @@ actor SessionStore {
     /// Find the next tool waiting for approval (excluding a specific tool ID)
     private func findNextPendingTool(in session: SessionState, excluding toolId: String) -> (id: String, name: String, timestamp: Date)? {
         for item in session.chatItems {
-            if item.id == toolId { continue }
-            if case .toolCall(let tool) = item.type, tool.status == .waitingForApproval {
+            if item.id == toolId {
+                continue
+            }
+            if case let .toolCall(tool) = item.type, tool.status == .waitingForApproval {
                 return (id: item.id, name: tool.name, timestamp: item.timestamp)
             }
         }
         return nil
     }
 
-    private func processPermissionDenied(sessionId: String, toolUseId: String, reason: String?) async {
+    private func processPermissionDenied(sessionId: String, toolUseId: String, reason _: String?) async {
         guard var session = sessions[sessionId] else { return }
 
         // Update tool status in chat history first
@@ -431,7 +436,7 @@ actor SessionStore {
                 toolUseId: nextPending.id,
                 toolName: nextPending.name,
                 toolInput: nil,
-                receivedAt: nextPending.timestamp
+                receivedAt: nextPending.timestamp,
             ))
             if session.phase.canTransition(to: newPhase) {
                 session.phase = newPhase
@@ -439,7 +444,7 @@ actor SessionStore {
             }
         } else {
             // No more pending tools - transition to processing (Claude will handle denial)
-            if case .waitingForApproval(let ctx) = session.phase, ctx.toolUseId == toolUseId {
+            if case let .waitingForApproval(ctx) = session.phase, ctx.toolUseId == toolUseId {
                 if session.phase.canTransition(to: .processing) {
                     session.phase = .processing
                 }
@@ -467,7 +472,7 @@ actor SessionStore {
                 toolUseId: nextPending.id,
                 toolName: nextPending.name,
                 toolInput: nil,
-                receivedAt: nextPending.timestamp
+                receivedAt: nextPending.timestamp,
             ))
             if session.phase.canTransition(to: newPhase) {
                 session.phase = newPhase
@@ -475,7 +480,7 @@ actor SessionStore {
             }
         } else {
             // No more pending tools - clear permission state
-            if case .waitingForApproval(let ctx) = session.phase, ctx.toolUseId == toolUseId {
+            if case let .waitingForApproval(ctx) = session.phase, ctx.toolUseId == toolUseId {
                 session.phase = .idle
             } else if case .waitingForApproval = session.phase {
                 // The failed tool wasn't in phase context, but no others pending
@@ -494,7 +499,7 @@ actor SessionStore {
         // Update conversationInfo from JSONL (summary, lastMessage, etc.)
         let conversationInfo = await ConversationParser.shared.parse(
             sessionId: payload.sessionId,
-            cwd: session.cwd
+            cwd: session.cwd,
         )
         session.conversationInfo = conversationInfo
 
@@ -505,7 +510,7 @@ actor SessionStore {
             for message in payload.messages {
                 for (blockIndex, block) in message.content.enumerated() {
                     switch block {
-                    case .toolUse(let tool):
+                    case let .toolUse(tool):
                         validIds.insert(tool.id)
                     case .text, .thinking, .interrupted:
                         let itemId = "\(message.id)-\(block.typePrefix)-\(blockIndex)"
@@ -531,13 +536,13 @@ actor SessionStore {
         }
 
         if payload.isIncremental {
-            let existingIds = Set(session.chatItems.map { $0.id })
+            let existingIds = Set(session.chatItems.map(\.id))
 
             for message in payload.messages {
                 for (blockIndex, block) in message.content.enumerated() {
-                    if case .toolUse(let tool) = block {
+                    if case let .toolUse(tool) = block {
                         if let idx = session.chatItems.firstIndex(where: { $0.id == tool.id }) {
-                            if case .toolCall(let existingTool) = session.chatItems[idx].type {
+                            if case let .toolCall(existingTool) = session.chatItems[idx].type {
                                 session.chatItems[idx] = ChatHistoryItem(
                                     id: tool.id,
                                     type: .toolCall(ToolCallItem(
@@ -546,9 +551,9 @@ actor SessionStore {
                                         status: existingTool.status,
                                         result: existingTool.result,
                                         structuredResult: existingTool.structuredResult,
-                                        subagentTools: existingTool.subagentTools
+                                        subagentTools: existingTool.subagentTools,
                                     )),
-                                    timestamp: message.timestamp
+                                    timestamp: message.timestamp,
                                 )
                             }
                             continue
@@ -563,22 +568,22 @@ actor SessionStore {
                         completedTools: payload.completedToolIds,
                         toolResults: payload.toolResults,
                         structuredResults: payload.structuredResults,
-                        toolTracker: &session.toolTracker
+                        toolTracker: &session.toolTracker,
                     )
 
-                    if let item = item {
+                    if let item {
                         session.chatItems.append(item)
                     }
                 }
             }
         } else {
-            let existingIds = Set(session.chatItems.map { $0.id })
+            let existingIds = Set(session.chatItems.map(\.id))
 
             for message in payload.messages {
                 for (blockIndex, block) in message.content.enumerated() {
-                    if case .toolUse(let tool) = block {
+                    if case let .toolUse(tool) = block {
                         if let idx = session.chatItems.firstIndex(where: { $0.id == tool.id }) {
-                            if case .toolCall(let existingTool) = session.chatItems[idx].type {
+                            if case let .toolCall(existingTool) = session.chatItems[idx].type {
                                 session.chatItems[idx] = ChatHistoryItem(
                                     id: tool.id,
                                     type: .toolCall(ToolCallItem(
@@ -587,9 +592,9 @@ actor SessionStore {
                                         status: existingTool.status,
                                         result: existingTool.result,
                                         structuredResult: existingTool.structuredResult,
-                                        subagentTools: existingTool.subagentTools
+                                        subagentTools: existingTool.subagentTools,
                                     )),
-                                    timestamp: message.timestamp
+                                    timestamp: message.timestamp,
                                 )
                             }
                             continue
@@ -604,10 +609,10 @@ actor SessionStore {
                         completedTools: payload.completedToolIds,
                         toolResults: payload.toolResults,
                         structuredResults: payload.structuredResults,
-                        toolTracker: &session.toolTracker
+                        toolTracker: &session.toolTracker,
                     )
 
-                    if let item = item {
+                    if let item {
                         session.chatItems.append(item)
                     }
                 }
@@ -621,7 +626,7 @@ actor SessionStore {
         await populateSubagentToolsFromAgentFiles(
             session: &session,
             cwd: payload.cwd,
-            structuredResults: payload.structuredResults
+            structuredResults: payload.structuredResults,
         )
 
         sessions[payload.sessionId] = session
@@ -631,7 +636,7 @@ actor SessionStore {
             session: session,
             completedToolIds: payload.completedToolIds,
             toolResults: payload.toolResults,
-            structuredResults: payload.structuredResults
+            structuredResults: payload.structuredResults,
         )
     }
 
@@ -639,13 +644,13 @@ actor SessionStore {
     private func populateSubagentToolsFromAgentFiles(
         session: inout SessionState,
         cwd: String,
-        structuredResults: [String: ToolResultData]
+        structuredResults: [String: ToolResultData],
     ) async {
-        for i in 0..<session.chatItems.count {
-            guard case .toolCall(var tool) = session.chatItems[i].type,
+        for i in 0 ..< session.chatItems.count {
+            guard case var .toolCall(tool) = session.chatItems[i].type,
                   tool.name == "Task",
                   let structuredResult = structuredResults[session.chatItems[i].id],
-                  case .task(let taskResult) = structuredResult,
+                  case let .task(taskResult) = structuredResult,
                   !taskResult.agentId.isEmpty else { continue }
 
             let taskToolId = session.chatItems[i].id
@@ -659,7 +664,7 @@ actor SessionStore {
 
             let subagentToolInfos = await ConversationParser.shared.parseSubagentTools(
                 agentId: taskResult.agentId,
-                cwd: cwd
+                cwd: cwd,
             )
 
             guard !subagentToolInfos.isEmpty else { continue }
@@ -670,14 +675,14 @@ actor SessionStore {
                     name: info.name,
                     input: info.input,
                     status: info.isCompleted ? .success : .running,
-                    timestamp: parseTimestamp(info.timestamp) ?? Date()
+                    timestamp: parseTimestamp(info.timestamp) ?? Date(),
                 )
             }
 
             session.chatItems[i] = ChatHistoryItem(
                 id: taskToolId,
                 type: .toolCall(tool),
-                timestamp: session.chatItems[i].timestamp
+                timestamp: session.chatItems[i].timestamp,
             )
 
             Self.logger.debug("Populated \(subagentToolInfos.count) subagent tools for Task \(taskToolId.prefix(12), privacy: .public) from agent \(taskResult.agentId.prefix(8), privacy: .public)")
@@ -690,10 +695,10 @@ actor SessionStore {
         session: SessionState,
         completedToolIds: Set<String>,
         toolResults: [String: ConversationParser.ToolResult],
-        structuredResults: [String: ToolResultData]
+        structuredResults: [String: ToolResultData],
     ) async {
         for item in session.chatItems {
-            guard case .toolCall(let tool) = item.type else { continue }
+            guard case let .toolCall(tool) = item.type else { continue }
 
             // Only emit for tools that are running or waiting but have results in JSONL
             guard tool.status == .running || tool.status == .waitingForApproval else { continue }
@@ -701,7 +706,7 @@ actor SessionStore {
 
             let result = ToolCompletionResult.from(
                 parserResult: toolResults[item.id],
-                structuredResult: structuredResults[item.id]
+                structuredResult: structuredResults[item.id],
             )
 
             // Process the completion event (this will update state and phase consistently)
@@ -718,10 +723,10 @@ actor SessionStore {
         completedTools: Set<String>,
         toolResults: [String: ConversationParser.ToolResult],
         structuredResults: [String: ToolResultData],
-        toolTracker: inout ToolTracker
+        toolTracker: inout ToolTracker,
     ) -> ChatHistoryItem? {
         switch block {
-        case .text(let text):
+        case let .text(text):
             let itemId = "\(message.id)-text-\(blockIndex)"
             guard !existingIds.contains(itemId) else { return nil }
 
@@ -731,7 +736,7 @@ actor SessionStore {
                 return ChatHistoryItem(id: itemId, type: .assistant(text), timestamp: message.timestamp)
             }
 
-        case .toolUse(let tool):
+        case let .toolUse(tool):
             guard toolTracker.markSeen(tool.id) else { return nil }
 
             let isCompleted = completedTools.contains(tool.id)
@@ -757,12 +762,12 @@ actor SessionStore {
                     status: status,
                     result: resultText,
                     structuredResult: structuredResults[tool.id],
-                    subagentTools: []
+                    subagentTools: [],
                 )),
-                timestamp: message.timestamp
+                timestamp: message.timestamp,
             )
 
-        case .thinking(let text):
+        case let .thinking(text):
             let itemId = "\(message.id)-thinking-\(blockIndex)"
             guard !existingIds.contains(itemId) else { return nil }
             return ChatHistoryItem(id: itemId, type: .thinking(text), timestamp: message.timestamp)
@@ -776,14 +781,15 @@ actor SessionStore {
 
     private func updateToolStatus(in session: inout SessionState, toolId: String, status: ToolStatus) {
         var found = false
-        for i in 0..<session.chatItems.count {
+        for i in 0 ..< session.chatItems.count {
             if session.chatItems[i].id == toolId,
-               case .toolCall(var tool) = session.chatItems[i].type {
+               case var .toolCall(tool) = session.chatItems[i].type
+            {
                 tool.status = status
                 session.chatItems[i] = ChatHistoryItem(
                     id: toolId,
                     type: .toolCall(tool),
-                    timestamp: session.chatItems[i].timestamp
+                    timestamp: session.chatItems[i].timestamp,
                 )
                 found = true
                 break
@@ -804,14 +810,15 @@ actor SessionStore {
         session.subagentState = SubagentState()
 
         // Mark running tools as interrupted
-        for i in 0..<session.chatItems.count {
-            if case .toolCall(var tool) = session.chatItems[i].type,
-               tool.status == .running {
+        for i in 0 ..< session.chatItems.count {
+            if case var .toolCall(tool) = session.chatItems[i].type,
+               tool.status == .running
+            {
                 tool.status = .interrupted
                 session.chatItems[i] = ChatHistoryItem(
                     id: session.chatItems[i].id,
                     type: .toolCall(tool),
-                    timestamp: session.chatItems[i].timestamp
+                    timestamp: session.chatItems[i].timestamp,
                 )
             }
         }
@@ -852,7 +859,7 @@ actor SessionStore {
         // Parse file asynchronously
         let messages = await ConversationParser.shared.parseFullConversation(
             sessionId: sessionId,
-            cwd: cwd
+            cwd: cwd,
         )
         let completedTools = await ConversationParser.shared.completedToolIds(for: sessionId)
         let toolResults = await ConversationParser.shared.toolResults(for: sessionId)
@@ -861,7 +868,7 @@ actor SessionStore {
         // Also parse conversationInfo (summary, lastMessage, etc.)
         let conversationInfo = await ConversationParser.shared.parse(
             sessionId: sessionId,
-            cwd: cwd
+            cwd: cwd,
         )
 
         // Process loaded history
@@ -871,7 +878,7 @@ actor SessionStore {
             completedTools: completedTools,
             toolResults: toolResults,
             structuredResults: structuredResults,
-            conversationInfo: conversationInfo
+            conversationInfo: conversationInfo,
         ))
     }
 
@@ -881,7 +888,7 @@ actor SessionStore {
         completedTools: Set<String>,
         toolResults: [String: ConversationParser.ToolResult],
         structuredResults: [String: ToolResultData],
-        conversationInfo: ConversationInfo
+        conversationInfo: ConversationInfo,
     ) async {
         guard var session = sessions[sessionId] else { return }
 
@@ -889,7 +896,7 @@ actor SessionStore {
         session.conversationInfo = conversationInfo
 
         // Convert messages to chat items
-        let existingIds = Set(session.chatItems.map { $0.id })
+        let existingIds = Set(session.chatItems.map(\.id))
 
         for message in messages {
             for (blockIndex, block) in message.content.enumerated() {
@@ -901,10 +908,10 @@ actor SessionStore {
                     completedTools: completedTools,
                     toolResults: toolResults,
                     structuredResults: structuredResults,
-                    toolTracker: &session.toolTracker
+                    toolTracker: &session.toolTracker,
                 )
 
-                if let item = item {
+                if let item {
                     session.chatItems.append(item)
                 }
             }
@@ -930,7 +937,7 @@ actor SessionStore {
             // Parse incrementally - only get NEW messages since last call
             let result = await ConversationParser.shared.parseIncremental(
                 sessionId: sessionId,
-                cwd: cwd
+                cwd: cwd,
             )
 
             if result.clearDetected {
@@ -948,7 +955,7 @@ actor SessionStore {
                 isIncremental: !result.clearDetected,
                 completedToolIds: result.completedToolIds,
                 toolResults: result.toolResults,
-                structuredResults: result.structuredResults
+                structuredResults: result.structuredResults,
             )
 
             await self?.process(.fileUpdated(payload))

@@ -22,10 +22,10 @@ actor TmuxPathFinder {
         }
 
         let possiblePaths = [
-            "/opt/homebrew/bin/tmux",  // Apple Silicon Homebrew
-            "/usr/local/bin/tmux",     // Intel Homebrew
-            "/usr/bin/tmux",           // System
-            "/bin/tmux"
+            "/opt/homebrew/bin/tmux", // Apple Silicon Homebrew
+            "/usr/local/bin/tmux", // Intel Homebrew
+            "/usr/bin/tmux", // System
+            "/bin/tmux",
         ]
 
         for path in possiblePaths {

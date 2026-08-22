@@ -51,7 +51,6 @@ struct ChatView: View {
         session.phase.approvalToolName
     }
 
-    
     var body: some View {
         ZStack {
             VStack(spacing: 0) {
@@ -74,13 +73,13 @@ struct ChatView: View {
                         interactivePromptBar
                             .transition(.asymmetric(
                                 insertion: .opacity.combined(with: .move(edge: .bottom)),
-                                removal: .opacity
+                                removal: .opacity,
                             ))
                     } else {
                         approvalBar(tool: tool)
                             .transition(.asymmetric(
                                 insertion: .opacity.combined(with: .move(edge: .bottom)),
-                                removal: .opacity
+                                removal: .opacity,
                             ))
                     }
                 } else {
@@ -120,7 +119,7 @@ struct ChatView: View {
                 // This allows tool status updates (waitingForApproval -> running) to reflect
                 if countChanged || lastItemChanged || newHistory != history {
                     // Track new messages when autoscroll is paused
-                    if isAutoscrollPaused && newHistory.count > previousHistoryCount {
+                    if isAutoscrollPaused, newHistory.count > previousHistoryCount {
                         let addedCount = newHistory.count - previousHistoryCount
                         newMessageCount += addedCount
                         previousHistoryCount = newHistory.count
@@ -129,12 +128,12 @@ struct ChatView: View {
                     history = newHistory
 
                     // Auto-scroll to bottom only if autoscroll is NOT paused
-                    if !isAutoscrollPaused && countChanged {
+                    if !isAutoscrollPaused, countChanged {
                         shouldScrollToBottom = true
                     }
 
                     // If we have data, skip loading state (handles view recreation)
-                    if isLoading && !newHistory.isEmpty {
+                    if isLoading, !newHistory.isEmpty {
                         isLoading = false
                     }
                 }
@@ -145,13 +144,14 @@ struct ChatView: View {
         }
         .onReceive(sessionMonitor.$instances) { sessions in
             if let updated = sessions.first(where: { $0.sessionId == sessionId }),
-               updated != session {
+               updated != session
+            {
                 // Check if permission was just accepted (transition from waitingForApproval to processing)
                 let wasWaiting = isWaitingForApproval
                 session = updated
                 let isNowProcessing = updated.phase == .processing
 
-                if wasWaiting && isNowProcessing {
+                if wasWaiting, isNowProcessing {
                     // Scroll to bottom after permission accepted (with slight delay)
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                         shouldScrollToBottom = true
@@ -161,7 +161,7 @@ struct ChatView: View {
         }
         .onChange(of: canSendMessages) { _, canSend in
             // Auto-focus input when tmux messaging becomes available
-            if canSend && !isInputFocused {
+            if canSend, !isInputFocused {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                     isInputFocused = true
                 }
@@ -202,7 +202,7 @@ struct ChatView: View {
             .padding(.vertical, 10)
             .background(
                 RoundedRectangle(cornerRadius: 8)
-                    .fill(isHeaderHovered ? Color.white.opacity(0.08) : Color.clear)
+                    .fill(isHeaderHovered ? Color.white.opacity(0.08) : Color.clear),
             )
         }
         .buttonStyle(.plain)
@@ -214,7 +214,7 @@ struct ChatView: View {
             LinearGradient(
                 colors: [fadeColor.opacity(0.7), fadeColor.opacity(0)],
                 startPoint: .top,
-                endPoint: .bottom
+                endPoint: .bottom,
             )
             .frame(height: 24)
             .offset(y: 24) // Push below header
@@ -287,7 +287,7 @@ struct ChatView: View {
                             .scaleEffect(x: 1, y: -1)
                             .transition(.asymmetric(
                                 insertion: .opacity.combined(with: .scale(scale: 0.95)).combined(with: .offset(y: -4)),
-                                removal: .opacity
+                                removal: .opacity,
                             ))
                     }
 
@@ -297,7 +297,7 @@ struct ChatView: View {
                             .scaleEffect(x: 1, y: -1)
                             .transition(.asymmetric(
                                 insertion: .opacity.combined(with: .scale(scale: 0.98)),
-                                removal: .opacity
+                                removal: .opacity,
                             ))
                     }
                 }
@@ -312,10 +312,10 @@ struct ChatView: View {
                 // contentOffset.y near 0 means at bottom, larger means scrolled up
                 geometry.contentOffset.y < 50
             } action: { wasAtBottom, isNowAtBottom in
-                if wasAtBottom && !isNowAtBottom {
+                if wasAtBottom, !isNowAtBottom {
                     // User scrolled away from bottom
                     pauseAutoscroll()
-                } else if !wasAtBottom && isNowAtBottom && isAutoscrollPaused {
+                } else if !wasAtBottom, isNowAtBottom, isAutoscrollPaused {
                     // User scrolled back to bottom
                     resumeAutoscroll()
                 }
@@ -332,7 +332,7 @@ struct ChatView: View {
             }
             // New messages indicator overlay
             .overlay(alignment: .bottom) {
-                if isAutoscrollPaused && newMessageCount > 0 {
+                if isAutoscrollPaused, newMessageCount > 0 {
                     NewMessagesIndicator(count: newMessageCount) {
                         withAnimation(.easeOut(duration: 0.3)) {
                             // In inverted scroll, use .bottom anchor to scroll to the visual bottom
@@ -343,7 +343,7 @@ struct ChatView: View {
                     .padding(.bottom, 16)
                     .transition(.asymmetric(
                         insertion: .opacity.combined(with: .move(edge: .bottom)),
-                        removal: .opacity
+                        removal: .opacity,
                     ))
                 }
             }
@@ -373,8 +373,8 @@ struct ChatView: View {
                         .fill(Color.white.opacity(canSendMessages ? 0.08 : 0.04))
                         .overlay(
                             RoundedRectangle(cornerRadius: 20)
-                                .strokeBorder(Color.white.opacity(0.1), lineWidth: 1)
-                        )
+                                .strokeBorder(Color.white.opacity(0.1), lineWidth: 1),
+                        ),
                 )
                 .onSubmit {
                     sendMessage()
@@ -397,7 +397,7 @@ struct ChatView: View {
             LinearGradient(
                 colors: [fadeColor.opacity(0), fadeColor.opacity(0.7)],
                 startPoint: .top,
-                endPoint: .bottom
+                endPoint: .bottom,
             )
             .frame(height: 24)
             .offset(y: -24) // Push above input bar
@@ -413,7 +413,7 @@ struct ChatView: View {
             tool: tool,
             toolInput: session.pendingToolInput,
             onApprove: { approvePermission() },
-            onDeny: { denyPermission() }
+            onDeny: { denyPermission() },
         )
     }
 
@@ -423,7 +423,7 @@ struct ChatView: View {
     private var interactivePromptBar: some View {
         ChatInteractivePromptBar(
             isInTmux: session.isInTmux,
-            onGoToTerminal: { focusTerminal() }
+            onGoToTerminal: { focusTerminal() },
         )
     }
 
@@ -495,7 +495,7 @@ struct ChatView: View {
         do {
             let output = try await ProcessExecutor.shared.run(
                 tmuxPath,
-                arguments: ["list-panes", "-a", "-F", "#{session_name}:#{window_index}.#{pane_index} #{pane_tty}"]
+                arguments: ["list-panes", "-a", "-F", "#{session_name}:#{window_index}.#{pane_index} #{pane_tty}"],
             )
 
             let lines = output.components(separatedBy: "\n")
@@ -526,13 +526,13 @@ struct MessageItemView: View {
 
     var body: some View {
         switch item.type {
-        case .user(let text):
+        case let .user(text):
             UserMessageView(text: text)
-        case .assistant(let text):
+        case let .assistant(text):
             AssistantMessageView(text: text)
-        case .toolCall(let tool):
+        case let .toolCall(tool):
             ToolCallView(tool: tool, sessionId: sessionId)
-        case .thinking(let text):
+        case let .thinking(text):
             ThinkingView(text: text)
         case .interrupted:
             InterruptedMessageView()
@@ -554,7 +554,7 @@ struct UserMessageView: View {
                 .padding(.vertical, 10)
                 .background(
                     RoundedRectangle(cornerRadius: 18)
-                        .fill(Color.white.opacity(0.15))
+                        .fill(Color.white.opacity(0.15)),
                 )
         }
     }
@@ -631,26 +631,26 @@ struct ToolCallView: View {
     private var statusColor: Color {
         switch tool.status {
         case .running:
-            return Color.white
+            Color.white
         case .waitingForApproval:
-            return Color.orange
+            Color.orange
         case .success:
-            return Color.green
+            Color.green
         case .error, .interrupted:
-            return Color.red
+            Color.red
         }
     }
 
     private var textColor: Color {
         switch tool.status {
         case .running:
-            return .white.opacity(0.6)
+            .white.opacity(0.6)
         case .waitingForApproval:
-            return Color.orange.opacity(0.9)
+            Color.orange.opacity(0.9)
         case .success:
-            return .white.opacity(0.7)
+            .white.opacity(0.7)
         case .error, .interrupted:
-            return Color.red.opacity(0.8)
+            Color.red.opacity(0.8)
         }
     }
 
@@ -670,7 +670,8 @@ struct ToolCallView: View {
     private var agentDescription: String? {
         guard tool.name == "AgentOutputTool",
               let agentId = tool.input["agentId"],
-              let sessionDescriptions = ChatHistoryManager.shared.agentDescriptions[sessionId] else {
+              let sessionDescriptions = ChatHistoryManager.shared.agentDescriptions[sessionId]
+        else {
             return nil
         }
         return sessionDescriptions[agentId]
@@ -682,7 +683,7 @@ struct ToolCallView: View {
                 Circle()
                     .fill(statusColor.opacity(tool.status == .running || tool.status == .waitingForApproval ? pulseOpacity : 0.6))
                     .frame(width: 6, height: 6)
-                    .id(tool.status)  // Forces view recreation, cancelling repeatForever animation
+                    .id(tool.status) // Forces view recreation, cancelling repeatForever animation
                     .onAppear {
                         if tool.status == .running || tool.status == .waitingForApproval {
                             startPulsing()
@@ -695,7 +696,7 @@ struct ToolCallView: View {
                     .foregroundColor(textColor)
                     .fixedSize()
 
-                if tool.name == "Task" && !tool.subagentTools.isEmpty {
+                if tool.name == "Task", !tool.subagentTools.isEmpty {
                     let taskDesc = tool.input["description"] ?? "Running agent..."
                     Text("\(taskDesc) (\(tool.subagentTools.count) tools)")
                         .font(.system(size: 11))
@@ -709,7 +710,7 @@ struct ToolCallView: View {
                         .foregroundColor(textColor.opacity(0.7))
                         .lineLimit(1)
                         .truncationMode(.tail)
-                } else if MCPToolFormatter.isMCPTool(tool.name) && !tool.input.isEmpty {
+                } else if MCPToolFormatter.isMCPTool(tool.name), !tool.input.isEmpty {
                     Text(MCPToolFormatter.formatArgs(tool.input))
                         .font(.system(size: 11))
                         .foregroundColor(textColor.opacity(0.7))
@@ -726,7 +727,7 @@ struct ToolCallView: View {
                 Spacer()
 
                 // Expand indicator (only for expandable tools)
-                if canExpand && tool.status != .running && tool.status != .waitingForApproval {
+                if canExpand, tool.status != .running, tool.status != .waitingForApproval {
                     Image(systemName: "chevron.right")
                         .font(.system(size: 9, weight: .medium))
                         .foregroundColor(.white.opacity(0.3))
@@ -736,7 +737,7 @@ struct ToolCallView: View {
             }
 
             // Subagent tools list (for Task tools)
-            if tool.name == "Task" && !tool.subagentTools.isEmpty {
+            if tool.name == "Task", !tool.subagentTools.isEmpty {
                 SubagentToolsList(tools: tool.subagentTools)
                     .padding(.leading, 12)
                     .padding(.top, 2)
@@ -744,7 +745,7 @@ struct ToolCallView: View {
 
             // Result content (Edit always shows, others when expanded)
             // Edit tools bypass hasResult check - fallback in ToolResultContent renders from input params
-            if showContent && tool.status != .running && tool.name != "Task" && (hasResult || tool.name == "Edit") {
+            if showContent, tool.status != .running, tool.name != "Task", hasResult || tool.name == "Edit" {
                 ToolResultContent(tool: tool)
                     .padding(.leading, 12)
                     .padding(.top, 4)
@@ -752,7 +753,7 @@ struct ToolCallView: View {
             }
 
             // Edit tools show diff from input even while running
-            if tool.name == "Edit" && tool.status == .running {
+            if tool.name == "Edit", tool.status == .running {
                 EditInputDiffView(input: tool.input)
                     .padding(.leading, 12)
                     .padding(.top, 4)
@@ -761,7 +762,7 @@ struct ToolCallView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 6)
-                .fill(canExpand && isHovering ? Color.white.opacity(0.05) : Color.clear)
+                .fill(canExpand && isHovering ? Color.white.opacity(0.05) : Color.clear),
         )
         .contentShape(Rectangle())
         .onHover { hovering in
@@ -781,7 +782,7 @@ struct ToolCallView: View {
     private func startPulsing() {
         withAnimation(
             .easeInOut(duration: 0.6)
-            .repeatForever(autoreverses: true)
+                .repeatForever(autoreverses: true),
         ) {
             pulseOpacity = 0.15
         }
@@ -829,22 +830,22 @@ struct SubagentToolRow: View {
 
     private var statusColor: Color {
         switch tool.status {
-        case .running, .waitingForApproval: return .orange
-        case .success: return .green
-        case .error, .interrupted: return .red
+        case .running, .waitingForApproval: .orange
+        case .success: .green
+        case .error, .interrupted: .red
         }
     }
 
     /// Get status text using the same logic as regular tools
     private var statusText: String {
         if tool.status == .interrupted {
-            return "Interrupted"
+            "Interrupted"
         } else if tool.status == .running {
-            return ToolStatusDisplay.running(for: tool.name, input: tool.input).text
+            ToolStatusDisplay.running(for: tool.name, input: tool.input).text
         } else {
             // For completed subagent tools, we don't have the result data
             // so use a simple display based on tool name and input
-            return ToolStatusDisplay.running(for: tool.name, input: tool.input).text
+            ToolStatusDisplay.running(for: tool.name, input: tool.input).text
         }
     }
 
@@ -854,7 +855,7 @@ struct SubagentToolRow: View {
             Circle()
                 .fill(statusColor.opacity(tool.status == .running ? dotOpacity : 0.6))
                 .frame(width: 4, height: 4)
-                .id(tool.status)  // Forces view recreation, cancelling repeatForever animation
+                .id(tool.status) // Forces view recreation, cancelling repeatForever animation
                 .onAppear {
                     if tool.status == .running {
                         withAnimation(.easeInOut(duration: 0.5).repeatForever(autoreverses: true)) {
@@ -913,7 +914,7 @@ struct SubagentToolsSummary: View {
         .padding(.horizontal, 8)
         .background(
             RoundedRectangle(cornerRadius: 6)
-                .fill(Color.white.opacity(0.03))
+                .fill(Color.white.opacity(0.03)),
         )
     }
 }
@@ -1028,7 +1029,7 @@ struct ChatInteractivePromptBar: View {
             .opacity(showButton ? 1 : 0)
             .scaleEffect(showButton ? 1 : 0.8)
         }
-        .frame(minHeight: 44)  // Consistent height with other bars
+        .frame(minHeight: 44) // Consistent height with other bars
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
         .background(Color.black.opacity(0.2))
@@ -1107,7 +1108,7 @@ struct ChatApprovalBar: View {
             .opacity(showAllowButton ? 1 : 0)
             .scaleEffect(showAllowButton ? 1 : 0.8)
         }
-        .frame(minHeight: 44)  // Consistent height with other bars
+        .frame(minHeight: 44) // Consistent height with other bars
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
         .background(Color.black.opacity(0.2))
@@ -1149,7 +1150,7 @@ struct NewMessagesIndicator: View {
             .background(
                 Capsule()
                     .fill(Color(red: 0.85, green: 0.47, blue: 0.34)) // Claude orange
-                    .shadow(color: .black.opacity(0.3), radius: 8, x: 0, y: 4)
+                    .shadow(color: .black.opacity(0.3), radius: 8, x: 0, y: 4),
             )
             .scaleEffect(isHovering ? 1.05 : 1.0)
         }

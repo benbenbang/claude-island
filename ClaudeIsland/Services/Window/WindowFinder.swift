@@ -40,7 +40,9 @@ actor WindowFinder {
 
     /// Check if yabai is available (caches result)
     func isYabaiAvailable() -> Bool {
-        if let cached = isAvailableCache { return cached }
+        if let cached = isAvailableCache {
+            return cached
+        }
 
         let paths = ["/opt/homebrew/bin/yabai", "/usr/local/bin/yabai"]
         for path in paths {
@@ -67,7 +69,8 @@ actor WindowFinder {
         do {
             let output = try await ProcessExecutor.shared.run(path, arguments: ["-m", "query", "--windows"])
             guard let data = output.data(using: .utf8),
-                  let jsonArray = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
+                  let jsonArray = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]]
+            else {
                 return []
             }
             return jsonArray.compactMap { YabaiWindow(from: $0) }

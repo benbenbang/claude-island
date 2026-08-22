@@ -7,8 +7,7 @@
 
 import Foundation
 
-struct HookInstaller {
-
+enum HookInstaller {
     /// Install hook script and update settings.json on app launch
     static func installIfNeeded() {
         let claudeDir = FileManager.default.homeDirectoryForCurrentUser
@@ -19,7 +18,7 @@ struct HookInstaller {
 
         try? FileManager.default.createDirectory(
             at: hooksDir,
-            withIntermediateDirectories: true
+            withIntermediateDirectories: true,
         )
 
         if let bundled = Bundle.main.url(forResource: "claude-island-state", withExtension: "py") {
@@ -27,7 +26,7 @@ struct HookInstaller {
             try? FileManager.default.copyItem(at: bundled, to: pythonScript)
             try? FileManager.default.setAttributes(
                 [.posixPermissions: 0o755],
-                ofItemAtPath: pythonScript.path
+                ofItemAtPath: pythonScript.path,
             )
         }
 
@@ -37,7 +36,8 @@ struct HookInstaller {
     private static func updateSettings(at settingsURL: URL) {
         var json: [String: Any] = [:]
         if let data = try? Data(contentsOf: settingsURL),
-           let existing = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+           let existing = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+        {
             json = existing
         }
 
@@ -52,7 +52,7 @@ struct HookInstaller {
         let withoutMatcher: [[String: Any]] = [["hooks": hookEntry]]
         let preCompactConfig: [[String: Any]] = [
             ["matcher": "auto", "hooks": hookEntry],
-            ["matcher": "manual", "hooks": hookEntry]
+            ["matcher": "manual", "hooks": hookEntry],
         ]
 
         var hooks = json["hooks"] as? [String: Any] ?? [:]
@@ -65,18 +65,18 @@ struct HookInstaller {
         for event in Array(hooks.keys) {
             guard var entries = hooks[event] as? [[String: Any]] else { continue }
             var entriesChanged = false
-            for i in entries.indices {
-                guard var entryHooks = entries[i]["hooks"] as? [[String: Any]] else { continue }
+            for entryIndex in entries.indices {
+                guard var entryHooks = entries[entryIndex]["hooks"] as? [[String: Any]] else { continue }
                 var entryHooksChanged = false
-                for j in entryHooks.indices {
-                    guard let cmd = entryHooks[j]["command"] as? String,
+                for hookIndex in entryHooks.indices {
+                    guard let cmd = entryHooks[hookIndex]["command"] as? String,
                           cmd.contains("claude-island-state.py"),
                           cmd != command else { continue }
-                    entryHooks[j]["command"] = command
+                    entryHooks[hookIndex]["command"] = command
                     entryHooksChanged = true
                 }
                 if entryHooksChanged {
-                    entries[i]["hooks"] = entryHooks
+                    entries[entryIndex]["hooks"] = entryHooks
                     entriesChanged = true
                 }
             }
@@ -130,7 +130,7 @@ struct HookInstaller {
 
         if let data = try? JSONSerialization.data(
             withJSONObject: json,
-            options: [.prettyPrinted, .sortedKeys]
+            options: [.prettyPrinted, .sortedKeys],
         ) {
             try? data.write(to: settingsURL)
         }
@@ -144,7 +144,8 @@ struct HookInstaller {
 
         guard let data = try? Data(contentsOf: settings),
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let hooks = json["hooks"] as? [String: Any] else {
+              let hooks = json["hooks"] as? [String: Any]
+        else {
             return false
         }
 
@@ -154,7 +155,8 @@ struct HookInstaller {
                     if let entryHooks = entry["hooks"] as? [[String: Any]] {
                         for hook in entryHooks {
                             if let cmd = hook["command"] as? String,
-                               cmd.contains("claude-island-state.py") {
+                               cmd.contains("claude-island-state.py")
+                            {
                                 return true
                             }
                         }
@@ -177,7 +179,8 @@ struct HookInstaller {
 
         guard let data = try? Data(contentsOf: settings),
               var json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-              var hooks = json["hooks"] as? [String: Any] else {
+              var hooks = json["hooks"] as? [String: Any]
+        else {
             return
         }
 
@@ -209,7 +212,7 @@ struct HookInstaller {
 
         if let data = try? JSONSerialization.data(
             withJSONObject: json,
-            options: [.prettyPrinted, .sortedKeys]
+            options: [.prettyPrinted, .sortedKeys],
         ) {
             try? data.write(to: settings)
         }

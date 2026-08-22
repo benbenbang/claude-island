@@ -17,11 +17,10 @@ extension NSScreen {
         let rightPadding = auxiliaryTopRightArea?.width ?? 0
 
         // Calculate width (same for both physical notch and menu bar)
-        let notchWidth: CGFloat
-        if leftPadding > 0, rightPadding > 0 {
-            notchWidth = fullWidth - leftPadding - rightPadding + 4
+        let notchWidth: CGFloat = if leftPadding > 0, rightPadding > 0 {
+            fullWidth - leftPadding - rightPadding + 4
         } else {
-            notchWidth = hasPhysicalNotch ? 180 : 224
+            hasPhysicalNotch ? 180 : 224
         }
 
         // Auto-detect height based on physical notch presence

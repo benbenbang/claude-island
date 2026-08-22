@@ -12,7 +12,7 @@ import SwiftUI
 
 /// Types of activities that can be shown in the notch
 enum NotchActivityType: Equatable {
-    case claude      // Claude is processing
+    case claude // Claude is processing
     case none
 }
 
@@ -62,7 +62,7 @@ class NotchActivityCoordinator: ObservableObject {
     func showActivity(
         type: NotchActivityType,
         value: CGFloat = 0,
-        duration: TimeInterval = 0
+        duration: TimeInterval = 0,
     ) {
         activityDuration = duration
 
@@ -70,7 +70,7 @@ class NotchActivityCoordinator: ObservableObject {
             expandingActivity = ExpandingActivity(
                 show: true,
                 type: type,
-                value: value
+                value: value,
             )
         }
     }
@@ -84,7 +84,7 @@ class NotchActivityCoordinator: ObservableObject {
 
     /// Toggle activity visibility
     func toggleActivity(type: NotchActivityType, value: CGFloat = 0) {
-        if expandingActivity.show && expandingActivity.type == type {
+        if expandingActivity.show, expandingActivity.type == type {
             hideActivity()
         } else {
             showActivity(type: type, value: value)
@@ -102,7 +102,7 @@ class NotchActivityCoordinator: ObservableObject {
         let currentType = expandingActivity.type
         activityTask = Task { [weak self] in
             try? await Task.sleep(for: .seconds(self?.activityDuration ?? 3))
-            guard let self = self, !Task.isCancelled else { return }
+            guard let self, !Task.isCancelled else { return }
 
             // Only hide if still showing the same type
             if self.expandingActivity.type == currentType {

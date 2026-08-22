@@ -35,7 +35,7 @@ actor ToolApprovalHandler {
         }
 
         // If there's a message, send it after a brief delay
-        if let message = message, !message.isEmpty {
+        if let message, !message.isEmpty {
             try? await Task.sleep(for: .milliseconds(100))
             return await sendKeys(to: target, keys: message, pressEnter: true)
         }

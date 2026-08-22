@@ -99,8 +99,6 @@ private struct BlockRenderer: View {
             Divider()
                 .background(baseColor.opacity(0.3))
                 .padding(.vertical, 4)
-        } else {
-            EmptyView()
         }
     }
 
@@ -114,7 +112,6 @@ private struct BlockRenderer: View {
         }
     }
 
-    @ViewBuilder
     private func blockQuoteView(_ blockQuote: BlockQuote) -> some View {
         HStack(spacing: 8) {
             Rectangle()
@@ -134,7 +131,6 @@ private struct BlockRenderer: View {
         .padding(.vertical, 2)
     }
 
-    @ViewBuilder
     private func unorderedListView(_ list: UnorderedList) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             ForEach(Array(list.listItems.enumerated()), id: \.offset) { _, item in
@@ -158,7 +154,6 @@ private struct BlockRenderer: View {
         }
     }
 
-    @ViewBuilder
     private func orderedListView(_ list: OrderedList) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             ForEach(Array(list.listItems.enumerated()), id: \.offset) { index, item in

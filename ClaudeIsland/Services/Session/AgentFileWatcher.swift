@@ -41,7 +41,7 @@ class AgentFileWatcher {
         self.cwd = cwd
 
         let projectDir = cwd.replacingOccurrences(of: "/", with: "-")
-                            .replacingOccurrences(of: ".", with: "-")
+            .replacingOccurrences(of: ".", with: "-")
         self.filePath = NSHomeDirectory() + "/.claude/projects/" + projectDir + "/agent-" + agentId + ".jsonl"
     }
 
@@ -56,7 +56,8 @@ class AgentFileWatcher {
         stopInternal()
 
         guard FileManager.default.fileExists(atPath: filePath),
-              let handle = FileHandle(forReadingAtPath: filePath) else {
+              let handle = FileHandle(forReadingAtPath: filePath)
+        else {
             logger.warning("Failed to open agent file: \(self.filePath, privacy: .public)")
             return
         }
@@ -76,7 +77,7 @@ class AgentFileWatcher {
         let newSource = DispatchSource.makeFileSystemObjectSource(
             fileDescriptor: fd,
             eventMask: [.write, .extend],
-            queue: queue
+            queue: queue,
         )
 
         newSource.setEventHandler { [weak self] in
@@ -100,15 +101,15 @@ class AgentFileWatcher {
         let newTools = tools.filter { !seenToolIds.contains($0.id) }
         guard !newTools.isEmpty || tools.count != seenToolIds.count else { return }
 
-        seenToolIds = Set(tools.map { $0.id })
+        seenToolIds = Set(tools.map(\.id))
         logger.debug("Agent \(self.agentId.prefix(8), privacy: .public) has \(tools.count) tools")
 
         DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
+            guard let self else { return }
             self.delegate?.didUpdateAgentTools(
                 sessionId: self.sessionId,
                 taskToolId: self.taskToolId,
-                tools: tools
+                tools: tools,
             )
         }
     }
@@ -155,7 +156,7 @@ class AgentFileWatcherManager {
             sessionId: sessionId,
             taskToolId: taskToolId,
             agentId: agentId,
-            cwd: cwd
+            cwd: cwd,
         )
         watcher.delegate = delegate
         watcher.start()
@@ -208,7 +209,7 @@ class AgentFileWatcherBridge: AgentFileWatcherDelegate {
     func didUpdateAgentTools(sessionId: String, taskToolId: String, tools: [SubagentToolInfo]) {
         Task {
             await SessionStore.shared.process(
-                .agentFileUpdated(sessionId: sessionId, taskToolId: taskToolId, tools: tools)
+                .agentFileUpdated(sessionId: sessionId, taskToolId: taskToolId, tools: tools),
             )
         }
     }

@@ -27,19 +27,21 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             hostBundle: Bundle.main,
             applicationBundle: Bundle.main,
             userDriver: userDriver,
-            delegate: nil
+            delegate: nil,
         )
         super.init()
         AppDelegate.shared = self
 
-        do {
-            try updater.start()
-        } catch {
-            print("Failed to start Sparkle updater: \(error)")
+        if FeatureFlags.sparkleUpdatesEnabled {
+            do {
+                try updater.start()
+            } catch {
+                print("Failed to start Sparkle updater: \(error)")
+            }
         }
     }
 
-    func applicationDidFinishLaunching(_ notification: Notification) {
+    func applicationDidFinishLaunching(_: Notification) {
         if !ensureSingleInstance() {
             NSApplication.shared.terminate(nil)
             return
@@ -57,7 +59,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         Mixpanel.mainInstance().registerSuperProperties([
             "app_version": version,
             "build_number": build,
-            "macos_version": osVersion
+            "macos_version": osVersion,
         ])
 
         fetchAndRegisterClaudeVersion()
@@ -65,7 +67,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         Mixpanel.mainInstance().people.set(properties: [
             "app_version": version,
             "build_number": build,
-            "macos_version": osVersion
+            "macos_version": osVersion,
         ])
 
         Mixpanel.mainInstance().track(event: "App Launched")
@@ -84,18 +86,22 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         NotificationCenter.default.addObserver(
             forName: .notchStyleChanged,
             object: nil,
-            queue: .main
+            queue: .main,
         ) { [weak self] _ in
             self?.handleNotchStyleChange()
         }
 
-        if updater.canCheckForUpdates {
-            updater.checkForUpdates()
-        }
+        // Gated by FeatureFlags.sparkleUpdatesEnabled (currently off — the Sparkle
+        // feed points at the upstream VibeNotch appcast; see FeatureFlags).
+        if FeatureFlags.sparkleUpdatesEnabled {
+            if updater.canCheckForUpdates {
+                updater.checkForUpdates()
+            }
 
-        updateCheckTimer = Timer.scheduledTimer(withTimeInterval: 3600, repeats: true) { [weak self] _ in
-            guard let updater = self?.updater, updater.canCheckForUpdates else { return }
-            updater.checkForUpdates()
+            updateCheckTimer = Timer.scheduledTimer(withTimeInterval: 3600, repeats: true) { [weak self] _ in
+                guard let updater = self?.updater, updater.canCheckForUpdates else { return }
+                updater.checkForUpdates()
+            }
         }
     }
 
@@ -109,7 +115,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    func applicationWillTerminate(_ notification: Notification) {
+    func applicationWillTerminate(_: Notification) {
         Mixpanel.mainInstance().flush()
         updateCheckTimer?.invalidate()
         screenObserver = nil
@@ -124,7 +130,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         let platformExpert = IOServiceGetMatchingService(
             kIOMainPortDefault,
-            IOServiceMatching("IOPlatformExpertDevice")
+            IOServiceMatching("IOPlatformExpertDevice"),
         )
         defer { IOObjectRelease(platformExpert) }
 
@@ -132,7 +138,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             platformExpert,
             kIOPlatformUUIDKey as CFString,
             kCFAllocatorDefault,
-            0
+            0,
         )?.takeRetainedValue() as? String {
             UserDefaults.standard.set(uuid, forKey: key)
             return uuid
@@ -150,7 +156,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         guard let projectDirs = try? FileManager.default.contentsOfDirectory(
             at: claudeProjectsDir,
             includingPropertiesForKeys: [.contentModificationDateKey],
-            options: .skipsHiddenFiles
+            options: .skipsHiddenFiles,
         ) else { return }
 
         var latestFile: URL?
@@ -160,12 +166,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             guard let files = try? FileManager.default.contentsOfDirectory(
                 at: projectDir,
                 includingPropertiesForKeys: [.contentModificationDateKey],
-                options: .skipsHiddenFiles
+                options: .skipsHiddenFiles,
             ) else { continue }
 
             for file in files where file.pathExtension == "jsonl" && !file.lastPathComponent.hasPrefix("agent-") {
                 if let attrs = try? file.resourceValues(forKeys: [.contentModificationDateKey]),
-                   let modDate = attrs.contentModificationDate {
+                   let modDate = attrs.contentModificationDate
+                {
                     if latestDate == nil || modDate > latestDate! {
                         latestDate = modDate
                         latestFile = file

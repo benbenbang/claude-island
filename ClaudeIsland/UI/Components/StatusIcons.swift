@@ -8,6 +8,7 @@
 import SwiftUI
 
 // MARK: - Waiting for Input Icon (speech bubble)
+
 struct WaitingForInputIcon: View {
     let size: CGFloat
     let color: Color
@@ -18,7 +19,7 @@ struct WaitingForInputIcon: View {
     }
 
     var body: some View {
-        Canvas { context, canvasSize in
+        Canvas { context, _ in
             let scale = size / 30.0
             let dotSize = 4 * scale
 
@@ -47,10 +48,10 @@ struct WaitingForInputIcon: View {
             // Draw solid dots
             for (x, y) in solidDots {
                 let rect = CGRect(
-                    x: x * scale - dotSize/2,
-                    y: y * scale - dotSize/2,
+                    x: x * scale - dotSize / 2,
+                    y: y * scale - dotSize / 2,
                     width: dotSize,
-                    height: dotSize
+                    height: dotSize,
                 )
                 context.fill(Path(rect), with: .color(color))
             }
@@ -58,10 +59,10 @@ struct WaitingForInputIcon: View {
             // Draw faded dots
             for (x, y) in fadedDots {
                 let rect = CGRect(
-                    x: x * scale - dotSize/2,
-                    y: y * scale - dotSize/2,
+                    x: x * scale - dotSize / 2,
+                    y: y * scale - dotSize / 2,
                     width: dotSize,
-                    height: dotSize
+                    height: dotSize,
                 )
                 context.fill(Path(rect), with: .color(color.opacity(0.4)))
             }
@@ -71,6 +72,7 @@ struct WaitingForInputIcon: View {
 }
 
 // MARK: - Waiting for Approval Icon (hand/stop)
+
 struct WaitingForApprovalIcon: View {
     let size: CGFloat
     let color: Color
@@ -81,7 +83,7 @@ struct WaitingForApprovalIcon: View {
     }
 
     var body: some View {
-        Canvas { context, canvasSize in
+        Canvas { context, _ in
             let scale = size / 30.0
             let dotSize = 4 * scale
 
@@ -99,10 +101,10 @@ struct WaitingForApprovalIcon: View {
 
             for (x, y) in solidDots {
                 let rect = CGRect(
-                    x: x * scale - dotSize/2,
-                    y: y * scale - dotSize/2,
+                    x: x * scale - dotSize / 2,
+                    y: y * scale - dotSize / 2,
                     width: dotSize,
-                    height: dotSize
+                    height: dotSize,
                 )
                 context.fill(Path(rect), with: .color(color))
             }
@@ -112,6 +114,7 @@ struct WaitingForApprovalIcon: View {
 }
 
 // MARK: - Running/Processing Icon (hourglass) - Animated
+
 struct RunningIcon: View {
     let size: CGFloat
     let color: Color
@@ -123,7 +126,7 @@ struct RunningIcon: View {
     }
 
     var body: some View {
-        Canvas { context, canvasSize in
+        Canvas { context, _ in
             let scale = size / 30.0
             let dotSize = 4 * scale
 
@@ -149,10 +152,10 @@ struct RunningIcon: View {
             // Draw solid dots
             for (x, y) in solidDots {
                 let rect = CGRect(
-                    x: x * scale - dotSize/2,
-                    y: y * scale - dotSize/2,
+                    x: x * scale - dotSize / 2,
+                    y: y * scale - dotSize / 2,
                     width: dotSize,
-                    height: dotSize
+                    height: dotSize,
                 )
                 context.fill(Path(rect), with: .color(color))
             }
@@ -160,10 +163,10 @@ struct RunningIcon: View {
             // Draw faded dots
             for (x, y) in fadedDots {
                 let rect = CGRect(
-                    x: x * scale - dotSize/2,
-                    y: y * scale - dotSize/2,
+                    x: x * scale - dotSize / 2,
+                    y: y * scale - dotSize / 2,
                     width: dotSize,
-                    height: dotSize
+                    height: dotSize,
                 )
                 context.fill(Path(rect), with: .color(color.opacity(0.4)))
             }
@@ -173,7 +176,7 @@ struct RunningIcon: View {
         .onAppear {
             withAnimation(
                 .linear(duration: 2.0)
-                .repeatForever(autoreverses: false)
+                    .repeatForever(autoreverses: false),
             ) {
                 rotation = 360
             }
@@ -182,6 +185,7 @@ struct RunningIcon: View {
 }
 
 // MARK: - Idle Icon (simple dash/dot)
+
 struct IdleIcon: View {
     let size: CGFloat
     let color: Color
@@ -192,21 +196,21 @@ struct IdleIcon: View {
     }
 
     var body: some View {
-        Canvas { context, canvasSize in
+        Canvas { context, _ in
             let scale = size / 30.0
             let dotSize = 4 * scale
 
             // Simple horizontal line
             let dots: [(CGFloat, CGFloat)] = [
-                (11, 15), (15, 15), (19, 15)
+                (11, 15), (15, 15), (19, 15),
             ]
 
             for (x, y) in dots {
                 let rect = CGRect(
-                    x: x * scale - dotSize/2,
-                    y: y * scale - dotSize/2,
+                    x: x * scale - dotSize / 2,
+                    y: y * scale - dotSize / 2,
                     width: dotSize,
-                    height: dotSize
+                    height: dotSize,
                 )
                 context.fill(Path(rect), with: .color(color))
             }
@@ -216,6 +220,7 @@ struct IdleIcon: View {
 }
 
 // MARK: - Status Icon View (unified)
+
 struct StatusIcon: View {
     let phase: SessionPhase
     let size: CGFloat

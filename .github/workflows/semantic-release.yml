@@ -11,6 +11,14 @@ on:
         options:
           - "true"
           - "false"
+      enableSparkle:
+        description: "Compile Sparkle auto-update into the build (1 = on). Keep 0 until SUFeedURL points at a feed you control."
+        default: "0"
+        required: false
+        type: choice
+        options:
+          - "1"
+          - "0"
 
 jobs:
   semantic-release:
@@ -120,6 +128,17 @@ jobs:
       - name: archive
         run: |
           rm -rf "$BUILD_DIR"
+          # Sparkle auto-update is OFF by default and only compiled in when the
+          # workflow is dispatched with enableSparkle=1. WARNING: the inherited
+          # SUFeedURL still points at upstream VibeNotch — only enable once it
+          # points at a feed you control (see FeatureFlags.swift).
+          SPARKLE_ARGS=()
+          if [ "${{ github.event.inputs.enableSparkle }}" = "1" ]; then
+            SPARKLE_ARGS+=(SWIFT_ACTIVE_COMPILATION_CONDITIONS='$(inherited) SPARKLE_ENABLED')
+            echo "::warning::Sparkle auto-update COMPILED IN for this release (enableSparkle=1)."
+          else
+            echo "Sparkle auto-update disabled (enableSparkle=${{ github.event.inputs.enableSparkle }})."
+          fi
           COMMON=(
             archive
             -scheme "$SCHEME"
@@ -130,14 +149,14 @@ jobs:
             CURRENT_PROJECT_VERSION="${{ github.run_number }}"
           )
           if [ "${{ steps.caps.outputs.sign }}" = "true" ]; then
-            xcodebuild "${COMMON[@]}" \
+            xcodebuild "${COMMON[@]}" "${SPARKLE_ARGS[@]}" \
               ENABLE_HARDENED_RUNTIME=YES \
               CODE_SIGN_STYLE=Manual \
               CODE_SIGN_IDENTITY="Developer ID Application" \
               DEVELOPMENT_TEAM="${{ secrets.APPLE_TEAM_ID }}" \
               PROVISIONING_PROFILE_SPECIFIER=""
           else
-            xcodebuild "${COMMON[@]}" \
+            xcodebuild "${COMMON[@]}" "${SPARKLE_ARGS[@]}" \
               CODE_SIGN_IDENTITY="-" \
               CODE_SIGN_STYLE=Manual \
               CODE_SIGNING_REQUIRED=NO \

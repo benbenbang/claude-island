@@ -20,7 +20,7 @@ actor TmuxTargetFinder {
         }
 
         guard let output = await runTmuxCommand(tmuxPath: tmuxPath, args: [
-            "list-panes", "-a", "-F", "#{session_name}:#{window_index}.#{pane_index} #{pane_pid}"
+            "list-panes", "-a", "-F", "#{session_name}:#{window_index}.#{pane_index} #{pane_pid}",
         ]) else {
             return nil
         }
@@ -49,7 +49,7 @@ actor TmuxTargetFinder {
         }
 
         guard let output = await runTmuxCommand(tmuxPath: tmuxPath, args: [
-            "list-panes", "-a", "-F", "#{session_name}:#{window_index}.#{pane_index} #{pane_current_path}"
+            "list-panes", "-a", "-F", "#{session_name}:#{window_index}.#{pane_index} #{pane_current_path}",
         ]) else {
             return nil
         }
@@ -82,7 +82,7 @@ actor TmuxTargetFinder {
 
         // Get the currently active pane
         guard let output = await runTmuxCommand(tmuxPath: tmuxPath, args: [
-            "display-message", "-p", "#{session_name}:#{window_index}.#{pane_index}"
+            "display-message", "-p", "#{session_name}:#{window_index}.#{pane_index}",
         ]) else {
             return false
         }

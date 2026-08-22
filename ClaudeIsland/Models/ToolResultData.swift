@@ -241,8 +241,8 @@ struct MCPResult: Equatable, @unchecked Sendable {
 
     static func == (lhs: MCPResult, rhs: MCPResult) -> Bool {
         lhs.serverName == rhs.serverName &&
-        lhs.toolName == rhs.toolName &&
-        NSDictionary(dictionary: lhs.rawResult).isEqual(to: rhs.rawResult)
+            lhs.toolName == rhs.toolName &&
+            NSDictionary(dictionary: lhs.rawResult).isEqual(to: rhs.rawResult)
     }
 }
 
@@ -306,24 +306,24 @@ struct ToolStatusDisplay {
     }
 
     /// Get completed status text for a tool result
-    static func completed(for toolName: String, result: ToolResultData?) -> ToolStatusDisplay {
-        guard let result = result else {
+    static func completed(for _: String, result: ToolResultData?) -> ToolStatusDisplay {
+        guard let result else {
             return ToolStatusDisplay(text: "Completed", isRunning: false)
         }
 
         switch result {
-        case .read(let r):
+        case let .read(r):
             let lineText = r.totalLines > r.numLines ? "\(r.numLines)+ lines" : "\(r.numLines) lines"
             return ToolStatusDisplay(text: "Read \(r.filename) (\(lineText))", isRunning: false)
 
-        case .edit(let r):
+        case let .edit(r):
             return ToolStatusDisplay(text: "Edited \(r.filename)", isRunning: false)
 
-        case .write(let r):
+        case let .write(r):
             let action = r.type == .create ? "Created" : "Wrote"
             return ToolStatusDisplay(text: "\(action) \(r.filename)", isRunning: false)
 
-        case .bash(let r):
+        case let .bash(r):
             if let bgId = r.backgroundTaskId {
                 return ToolStatusDisplay(text: "Running in background (\(bgId))", isRunning: false)
             }
@@ -332,11 +332,11 @@ struct ToolStatusDisplay {
             }
             return ToolStatusDisplay(text: "Completed", isRunning: false)
 
-        case .grep(let r):
+        case let .grep(r):
             let fileWord = r.numFiles == 1 ? "file" : "files"
             return ToolStatusDisplay(text: "Found \(r.numFiles) \(fileWord)", isRunning: false)
 
-        case .glob(let r):
+        case let .glob(r):
             let fileWord = r.numFiles == 1 ? "file" : "files"
             if r.numFiles == 0 {
                 return ToolStatusDisplay(text: "No files found", isRunning: false)
@@ -346,13 +346,13 @@ struct ToolStatusDisplay {
         case .todoWrite:
             return ToolStatusDisplay(text: "Updated todos", isRunning: false)
 
-        case .task(let r):
+        case let .task(r):
             return ToolStatusDisplay(text: r.status.capitalized, isRunning: false)
 
-        case .webFetch(let r):
+        case let .webFetch(r):
             return ToolStatusDisplay(text: "\(r.code) \(r.codeText)", isRunning: false)
 
-        case .webSearch(let r):
+        case let .webSearch(r):
             let time = r.durationSeconds >= 1 ?
                 "\(Int(r.durationSeconds))s" :
                 "\(Int(r.durationSeconds * 1000))ms"
@@ -362,7 +362,7 @@ struct ToolStatusDisplay {
         case .askUserQuestion:
             return ToolStatusDisplay(text: "Answered", isRunning: false)
 
-        case .bashOutput(let r):
+        case let .bashOutput(r):
             return ToolStatusDisplay(text: "Status: \(r.status)", isRunning: false)
 
         case .killShell:

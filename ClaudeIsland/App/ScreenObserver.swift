@@ -24,14 +24,14 @@ class ScreenObserver {
         observer = NotificationCenter.default.addObserver(
             forName: NSApplication.didChangeScreenParametersNotification,
             object: nil,
-            queue: .main
+            queue: .main,
         ) { [weak self] _ in
             self?.onScreenChange()
         }
     }
 
     private func stopObserving() {
-        if let observer = observer {
+        if let observer {
             NotificationCenter.default.removeObserver(observer)
         }
     }

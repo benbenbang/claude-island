@@ -46,7 +46,8 @@ enum AppSettings {
     static var notificationSound: NotificationSound {
         get {
             guard let rawValue = defaults.string(forKey: Keys.notificationSound),
-                  let sound = NotificationSound(rawValue: rawValue) else {
+                  let sound = NotificationSound(rawValue: rawValue)
+            else {
                 return .pop
             }
             return sound

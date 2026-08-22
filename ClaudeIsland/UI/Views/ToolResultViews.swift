@@ -15,37 +15,37 @@ struct ToolResultContent: View {
     var body: some View {
         if let structured = tool.structuredResult {
             switch structured {
-            case .read(let r):
+            case let .read(r):
                 ReadResultContent(result: r)
-            case .edit(let r):
+            case let .edit(r):
                 EditResultContent(result: r, toolInput: tool.input)
-            case .write(let r):
+            case let .write(r):
                 WriteResultContent(result: r)
-            case .bash(let r):
+            case let .bash(r):
                 BashResultContent(result: r)
-            case .grep(let r):
+            case let .grep(r):
                 GrepResultContent(result: r)
-            case .glob(let r):
+            case let .glob(r):
                 GlobResultContent(result: r)
-            case .todoWrite(let r):
+            case let .todoWrite(r):
                 TodoWriteResultContent(result: r)
-            case .task(let r):
+            case let .task(r):
                 TaskResultContent(result: r)
-            case .webFetch(let r):
+            case let .webFetch(r):
                 WebFetchResultContent(result: r)
-            case .webSearch(let r):
+            case let .webSearch(r):
                 WebSearchResultContent(result: r)
-            case .askUserQuestion(let r):
+            case let .askUserQuestion(r):
                 AskUserQuestionResultContent(result: r)
-            case .bashOutput(let r):
+            case let .bashOutput(r):
                 BashOutputResultContent(result: r)
-            case .killShell(let r):
+            case let .killShell(r):
                 KillShellResultContent(result: r)
-            case .exitPlanMode(let r):
+            case let .exitPlanMode(r):
                 ExitPlanModeResultContent(result: r)
-            case .mcp(let r):
+            case let .mcp(r):
                 MCPResultContent(result: r)
-            case .generic(let r):
+            case let .generic(r):
                 GenericResultContent(result: r)
             }
         } else if tool.name == "Edit" {
@@ -54,8 +54,6 @@ struct ToolResultContent: View {
         } else if let result = tool.result {
             // Fallback to raw text display
             GenericTextContent(text: result)
-        } else {
-            EmptyView()
         }
     }
 }
@@ -102,7 +100,7 @@ struct ReadResultContent: View {
                 content: result.content,
                 startLine: result.startLine,
                 totalLines: result.totalLines,
-                maxLines: 10
+                maxLines: 10,
             )
         }
     }
@@ -164,7 +162,7 @@ struct WriteResultContent: View {
             }
 
             // Content preview for new files
-            if result.type == .create && !result.content.isEmpty {
+            if result.type == .create, !result.content.isEmpty {
                 CodePreview(content: result.content, maxLines: 8)
             } else if let patches = result.structuredPatch, !patches.isEmpty {
                 DiffView(patches: patches)
@@ -217,7 +215,7 @@ struct BashResultContent: View {
             }
 
             // Empty state
-            if !result.hasOutput && result.backgroundTaskId == nil && result.returnCodeInterpretation == nil {
+            if !result.hasOutput, result.backgroundTaskId == nil, result.returnCodeInterpretation == nil {
                 Text("(No content)")
                     .font(.system(size: 11, design: .monospaced))
                     .foregroundColor(.white.opacity(0.3))
@@ -314,17 +312,17 @@ struct TodoWriteResultContent: View {
 
     private func todoIcon(for status: String) -> String {
         switch status {
-        case "completed": return "checkmark.circle.fill"
-        case "in_progress": return "circle.lefthalf.filled"
-        default: return "circle"
+        case "completed": "checkmark.circle.fill"
+        case "in_progress": "circle.lefthalf.filled"
+        default: "circle"
         }
     }
 
     private func todoColor(for status: String) -> Color {
         switch status {
-        case "completed": return .green.opacity(0.7)
-        case "in_progress": return .orange.opacity(0.7)
-        default: return .white.opacity(0.4)
+        case "completed": .green.opacity(0.7)
+        case "in_progress": .orange.opacity(0.7)
+        default: .white.opacity(0.4)
         }
     }
 }
@@ -367,10 +365,10 @@ struct TaskResultContent: View {
 
     private var statusColor: Color {
         switch result.status {
-        case "completed": return .green.opacity(0.7)
-        case "in_progress": return .orange.opacity(0.7)
-        case "failed", "error": return .red.opacity(0.7)
-        default: return .white.opacity(0.5)
+        case "completed": .green.opacity(0.7)
+        case "in_progress": .orange.opacity(0.7)
+        case "failed", "error": .red.opacity(0.7)
+        default: .white.opacity(0.5)
         }
     }
 
@@ -689,7 +687,7 @@ struct FileCodeView: View {
                 CodeLineView(
                     line: line,
                     lineNumber: lineNumber,
-                    isLast: isLast
+                    isLast: isLast,
                 )
             }
 
@@ -853,17 +851,17 @@ private enum DiffLineType {
 
     var textColor: Color {
         switch self {
-        case .added: return Color(red: 0.4, green: 0.8, blue: 0.4)
-        case .removed: return Color(red: 0.9, green: 0.5, blue: 0.5)
-        case .context: return .white.opacity(0.5)
+        case .added: Color(red: 0.4, green: 0.8, blue: 0.4)
+        case .removed: Color(red: 0.9, green: 0.5, blue: 0.5)
+        case .context: .white.opacity(0.5)
         }
     }
 
     var backgroundColor: Color {
         switch self {
-        case .added: return Color(red: 0.2, green: 0.4, blue: 0.2).opacity(0.3)
-        case .removed: return Color(red: 0.4, green: 0.2, blue: 0.2).opacity(0.3)
-        case .context: return .clear
+        case .added: Color(red: 0.2, green: 0.4, blue: 0.2).opacity(0.3)
+        case .removed: Color(red: 0.4, green: 0.2, blue: 0.2).opacity(0.3)
+        case .context: .clear
         }
     }
 }
@@ -871,7 +869,7 @@ private enum DiffLineType {
 struct SimpleDiffView: View {
     let oldString: String
     let newString: String
-    var filename: String? = nil
+    var filename: String?
 
     /// Compute diff using LCS algorithm
     private var diffLines: [DiffLine] {
@@ -888,15 +886,17 @@ struct SimpleDiffView: View {
 
         while oldIdx < oldLines.count || newIdx < newLines.count {
             // Limit output
-            if result.count >= 12 { break }
+            if result.count >= 12 {
+                break
+            }
 
             let lcsLine = lcsIdx < lcs.count ? lcs[lcsIdx] : nil
 
-            if oldIdx < oldLines.count && (lcsLine == nil || oldLines[oldIdx] != lcsLine) {
+            if oldIdx < oldLines.count, lcsLine == nil || oldLines[oldIdx] != lcsLine {
                 // Line in old but not in LCS - removed
                 result.append(DiffLine(text: oldLines[oldIdx], type: .removed, lineNumber: oldIdx + 1))
                 oldIdx += 1
-            } else if newIdx < newLines.count && (lcsLine == nil || newLines[newIdx] != lcsLine) {
+            } else if newIdx < newLines.count, lcsLine == nil || newLines[newIdx] != lcsLine {
                 // Line in new but not in LCS - added
                 result.append(DiffLine(text: newLines[newIdx], type: .added, lineNumber: newIdx + 1))
                 newIdx += 1
@@ -919,8 +919,8 @@ struct SimpleDiffView: View {
         // DP table
         var dp = Array(repeating: Array(repeating: 0, count: n + 1), count: m + 1)
 
-        for i in 1...m {
-            for j in 1...n {
+        for i in 1 ... m {
+            for j in 1 ... n {
                 if a[i - 1] == b[j - 1] {
                     dp[i][j] = dp[i - 1][j - 1] + 1
                 } else {
@@ -932,7 +932,7 @@ struct SimpleDiffView: View {
         // Backtrack to find LCS
         var lcs: [String] = []
         var i = m, j = n
-        while i > 0 && j > 0 {
+        while i > 0, j > 0 {
             if a[i - 1] == b[j - 1] {
                 lcs.append(a[i - 1])
                 i -= 1
@@ -1001,7 +1001,7 @@ struct SimpleDiffView: View {
                     type: line.type,
                     lineNumber: line.lineNumber,
                     isFirst: isFirst,
-                    isLast: isLast
+                    isLast: isLast,
                 )
             }
 
@@ -1033,7 +1033,7 @@ struct SimpleDiffView: View {
         let isLast: Bool
 
         private var corners: RoundedCorner.RectCorner {
-            if isFirst && isLast {
+            if isFirst, isLast {
                 return .allCorners
             } else if isFirst {
                 return [.topLeft, .topRight]
@@ -1073,7 +1073,7 @@ struct SimpleDiffView: View {
     }
 }
 
-// Helper for selective corner rounding (macOS compatible)
+/// Helper for selective corner rounding (macOS compatible)
 struct RoundedCorner: Shape {
     var radius: CGFloat
     var corners: RectCorner
@@ -1099,22 +1099,22 @@ struct RoundedCorner: Shape {
         path.addLine(to: CGPoint(x: rect.maxX - tr, y: rect.minY))
         if tr > 0 {
             path.addArc(center: CGPoint(x: rect.maxX - tr, y: rect.minY + tr),
-                       radius: tr, startAngle: .degrees(-90), endAngle: .degrees(0), clockwise: false)
+                        radius: tr, startAngle: .degrees(-90), endAngle: .degrees(0), clockwise: false)
         }
         path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY - br))
         if br > 0 {
             path.addArc(center: CGPoint(x: rect.maxX - br, y: rect.maxY - br),
-                       radius: br, startAngle: .degrees(0), endAngle: .degrees(90), clockwise: false)
+                        radius: br, startAngle: .degrees(0), endAngle: .degrees(90), clockwise: false)
         }
         path.addLine(to: CGPoint(x: rect.minX + bl, y: rect.maxY))
         if bl > 0 {
             path.addArc(center: CGPoint(x: rect.minX + bl, y: rect.maxY - bl),
-                       radius: bl, startAngle: .degrees(90), endAngle: .degrees(180), clockwise: false)
+                        radius: bl, startAngle: .degrees(90), endAngle: .degrees(180), clockwise: false)
         }
         path.addLine(to: CGPoint(x: rect.minX, y: rect.minY + tl))
         if tl > 0 {
             path.addArc(center: CGPoint(x: rect.minX + tl, y: rect.minY + tl),
-                       radius: tl, startAngle: .degrees(180), endAngle: .degrees(270), clockwise: false)
+                        radius: tl, startAngle: .degrees(180), endAngle: .degrees(270), clockwise: false)
         }
         path.closeSubpath()
 

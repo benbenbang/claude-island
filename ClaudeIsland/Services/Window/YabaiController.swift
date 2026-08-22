@@ -68,19 +68,19 @@ actor YabaiController {
         do {
             // Get clients attached to this specific session
             let output = try await ProcessExecutor.shared.run(tmuxPath, arguments: [
-                "list-clients", "-t", session, "-F", "#{client_pid}"
+                "list-clients", "-t", session, "-F", "#{client_pid}",
             ])
 
             let clientPids = output.components(separatedBy: "\n")
                 .compactMap { Int($0.trimmingCharacters(in: .whitespaces)) }
 
-            let windowPids = Set(windows.map { $0.pid })
+            let windowPids = Set(windows.map(\.pid))
 
             for clientPid in clientPids {
                 var currentPid = clientPid
                 while currentPid > 1 {
                     guard let info = tree[currentPid] else { break }
-                    if isTerminalProcess(info.command) && windowPids.contains(currentPid) {
+                    if isTerminalProcess(info.command), windowPids.contains(currentPid) {
                         return currentPid
                     }
                     currentPid = info.ppid
@@ -104,7 +104,7 @@ actor YabaiController {
 
         do {
             let panesOutput = try await ProcessExecutor.shared.run(tmuxPath, arguments: [
-                "list-panes", "-a", "-F", "#{session_name}:#{window_index}.#{pane_index}|#{pane_pid}"
+                "list-panes", "-a", "-F", "#{session_name}:#{window_index}.#{pane_index}|#{pane_pid}",
             ])
 
             let panes = panesOutput.components(separatedBy: "\n").filter { !$0.isEmpty }

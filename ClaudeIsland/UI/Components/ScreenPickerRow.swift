@@ -12,7 +12,7 @@ struct ScreenPickerRow: View {
     @State private var isHovered = false
 
     private var isExpanded: Bool {
-        get { screenSelector.isPickerExpanded }
+        screenSelector.isPickerExpanded
     }
 
     private func setExpanded(_ value: Bool) {
@@ -52,7 +52,7 @@ struct ScreenPickerRow: View {
                 .padding(.vertical, 10)
                 .background(
                     RoundedRectangle(cornerRadius: 8)
-                        .fill(isHovered ? Color.white.opacity(0.08) : Color.clear)
+                        .fill(isHovered ? Color.white.opacity(0.08) : Color.clear),
                 )
             }
             .buttonStyle(.plain)
@@ -65,7 +65,7 @@ struct ScreenPickerRow: View {
                     ScreenOptionRow(
                         label: "Automatic",
                         sublabel: "Built-in or Main",
-                        isSelected: screenSelector.selectionMode == .automatic
+                        isSelected: screenSelector.selectionMode == .automatic,
                     ) {
                         screenSelector.selectAutomatic()
                         triggerWindowRecreation()
@@ -78,7 +78,7 @@ struct ScreenPickerRow: View {
                             label: screen.localizedName,
                             sublabel: screenSublabel(for: screen),
                             isSelected: screenSelector.selectionMode == .specificScreen &&
-                                       screenSelector.isSelected(screen)
+                                screenSelector.isSelected(screen),
                         ) {
                             screenSelector.selectScreen(screen)
                             triggerWindowRecreation()
@@ -123,7 +123,7 @@ struct ScreenPickerRow: View {
         // Notify to recreate the window
         NotificationCenter.default.post(
             name: NSApplication.didChangeScreenParametersNotification,
-            object: nil
+            object: nil,
         )
     }
 
@@ -158,7 +158,7 @@ private struct ScreenOptionRow: View {
                         .font(.system(size: 12, weight: .medium))
                         .foregroundColor(.white.opacity(isHovered ? 1.0 : 0.7))
 
-                    if let sublabel = sublabel {
+                    if let sublabel {
                         Text(sublabel)
                             .font(.system(size: 10))
                             .foregroundColor(.white.opacity(0.4))
@@ -177,7 +177,7 @@ private struct ScreenOptionRow: View {
             .padding(.vertical, 6)
             .background(
                 RoundedRectangle(cornerRadius: 6)
-                    .fill(isHovered ? Color.white.opacity(0.06) : Color.clear)
+                    .fill(isHovered ? Color.white.opacity(0.06) : Color.clear),
             )
         }
         .buttonStyle(.plain)

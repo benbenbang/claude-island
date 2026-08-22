@@ -98,13 +98,12 @@ struct ToolCompletionResult: Sendable {
     let structuredResult: ToolResultData?
 
     nonisolated static func from(parserResult: ConversationParser.ToolResult?, structuredResult: ToolResultData?) -> ToolCompletionResult {
-        let status: ToolStatus
-        if parserResult?.isInterrupted == true {
-            status = .interrupted
+        let status: ToolStatus = if parserResult?.isInterrupted == true {
+            .interrupted
         } else if parserResult?.isError == true {
-            status = .error
+            .error
         } else {
-            status = .success
+            .success
         }
 
         var resultText: String? = nil
@@ -135,16 +134,16 @@ extension HookEvent {
         }
 
         // Permission request creates waitingForApproval state
-        if expectsResponse, let tool = tool {
+        if expectsResponse, let tool {
             return .waitingForApproval(PermissionContext(
                 toolUseId: toolUseId ?? "",
                 toolName: tool,
                 toolInput: toolInput,
-                receivedAt: Date()
+                receivedAt: Date(),
             ))
         }
 
-        if event == "Notification" && notificationType == "idle_prompt" {
+        if event == "Notification", notificationType == "idle_prompt" {
             return .idle
         }
 
@@ -171,9 +170,9 @@ extension HookEvent {
     nonisolated var shouldSyncFile: Bool {
         switch event {
         case "UserPromptSubmit", "PreToolUse", "PostToolUse", "Stop":
-            return true
+            true
         default:
-            return false
+            false
         }
     }
 }
@@ -183,38 +182,38 @@ extension HookEvent {
 extension SessionEvent: CustomStringConvertible {
     nonisolated var description: String {
         switch self {
-        case .hookReceived(let event):
-            return "hookReceived(\(event.event), session: \(event.sessionId.prefix(8)))"
-        case .permissionApproved(let sessionId, let toolUseId):
-            return "permissionApproved(session: \(sessionId.prefix(8)), tool: \(toolUseId.prefix(12)))"
-        case .permissionDenied(let sessionId, let toolUseId, _):
-            return "permissionDenied(session: \(sessionId.prefix(8)), tool: \(toolUseId.prefix(12)))"
-        case .permissionSocketFailed(let sessionId, let toolUseId):
-            return "permissionSocketFailed(session: \(sessionId.prefix(8)), tool: \(toolUseId.prefix(12)))"
-        case .fileUpdated(let payload):
-            return "fileUpdated(session: \(payload.sessionId.prefix(8)), messages: \(payload.messages.count))"
-        case .interruptDetected(let sessionId):
-            return "interruptDetected(session: \(sessionId.prefix(8)))"
-        case .clearDetected(let sessionId):
-            return "clearDetected(session: \(sessionId.prefix(8)))"
-        case .sessionEnded(let sessionId):
-            return "sessionEnded(session: \(sessionId.prefix(8)))"
-        case .loadHistory(let sessionId, _):
-            return "loadHistory(session: \(sessionId.prefix(8)))"
-        case .historyLoaded(let sessionId, let messages, _, _, _, _):
-            return "historyLoaded(session: \(sessionId.prefix(8)), messages: \(messages.count))"
-        case .toolCompleted(let sessionId, let toolUseId, let result):
-            return "toolCompleted(session: \(sessionId.prefix(8)), tool: \(toolUseId.prefix(12)), status: \(result.status))"
-        case .subagentStarted(let sessionId, let taskToolId):
-            return "subagentStarted(session: \(sessionId.prefix(8)), task: \(taskToolId.prefix(12)))"
-        case .subagentToolExecuted(let sessionId, let tool):
-            return "subagentToolExecuted(session: \(sessionId.prefix(8)), tool: \(tool.name))"
-        case .subagentToolCompleted(let sessionId, let toolId, let status):
-            return "subagentToolCompleted(session: \(sessionId.prefix(8)), tool: \(toolId.prefix(12)), status: \(status))"
-        case .subagentStopped(let sessionId, let taskToolId):
-            return "subagentStopped(session: \(sessionId.prefix(8)), task: \(taskToolId.prefix(12)))"
-        case .agentFileUpdated(let sessionId, let taskToolId, let tools):
-            return "agentFileUpdated(session: \(sessionId.prefix(8)), task: \(taskToolId.prefix(12)), tools: \(tools.count))"
+        case let .hookReceived(event):
+            "hookReceived(\(event.event), session: \(event.sessionId.prefix(8)))"
+        case let .permissionApproved(sessionId, toolUseId):
+            "permissionApproved(session: \(sessionId.prefix(8)), tool: \(toolUseId.prefix(12)))"
+        case let .permissionDenied(sessionId, toolUseId, _):
+            "permissionDenied(session: \(sessionId.prefix(8)), tool: \(toolUseId.prefix(12)))"
+        case let .permissionSocketFailed(sessionId, toolUseId):
+            "permissionSocketFailed(session: \(sessionId.prefix(8)), tool: \(toolUseId.prefix(12)))"
+        case let .fileUpdated(payload):
+            "fileUpdated(session: \(payload.sessionId.prefix(8)), messages: \(payload.messages.count))"
+        case let .interruptDetected(sessionId):
+            "interruptDetected(session: \(sessionId.prefix(8)))"
+        case let .clearDetected(sessionId):
+            "clearDetected(session: \(sessionId.prefix(8)))"
+        case let .sessionEnded(sessionId):
+            "sessionEnded(session: \(sessionId.prefix(8)))"
+        case let .loadHistory(sessionId, _):
+            "loadHistory(session: \(sessionId.prefix(8)))"
+        case let .historyLoaded(sessionId, messages, _, _, _, _):
+            "historyLoaded(session: \(sessionId.prefix(8)), messages: \(messages.count))"
+        case let .toolCompleted(sessionId, toolUseId, result):
+            "toolCompleted(session: \(sessionId.prefix(8)), tool: \(toolUseId.prefix(12)), status: \(result.status))"
+        case let .subagentStarted(sessionId, taskToolId):
+            "subagentStarted(session: \(sessionId.prefix(8)), task: \(taskToolId.prefix(12)))"
+        case let .subagentToolExecuted(sessionId, tool):
+            "subagentToolExecuted(session: \(sessionId.prefix(8)), tool: \(tool.name))"
+        case let .subagentToolCompleted(sessionId, toolId, status):
+            "subagentToolCompleted(session: \(sessionId.prefix(8)), tool: \(toolId.prefix(12)), status: \(status))"
+        case let .subagentStopped(sessionId, taskToolId):
+            "subagentStopped(session: \(sessionId.prefix(8)), task: \(taskToolId.prefix(12)))"
+        case let .agentFileUpdated(sessionId, taskToolId, tools):
+            "agentFileUpdated(session: \(sessionId.prefix(8)), task: \(taskToolId.prefix(12)), tools: \(tools.count))"
         }
     }
 }

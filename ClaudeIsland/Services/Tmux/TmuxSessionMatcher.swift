@@ -35,7 +35,7 @@ actor TmuxSessionMatcher {
         guard let sessionFiles = try? FileManager.default.contentsOfDirectory(
             at: projectDir,
             includingPropertiesForKeys: nil,
-            options: [.skipsHiddenFiles]
+            options: [.skipsHiddenFiles],
         ).filter({ $0.pathExtension == "jsonl" && !$0.lastPathComponent.hasPrefix("agent-") }) else {
             return nil
         }
@@ -46,7 +46,7 @@ actor TmuxSessionMatcher {
             let sessionId = sessionUrl.deletingPathExtension().lastPathComponent
             let score = countMatchingSnippets(snippets: snippets, inFile: sessionUrl)
 
-            if score > 0 && (bestMatch == nil || score > bestMatch!.score) {
+            if score > 0, bestMatch == nil || score > bestMatch!.score {
                 bestMatch = (sessionId, score)
             }
         }
@@ -63,7 +63,7 @@ actor TmuxSessionMatcher {
     private func capturePaneContent(tmuxPath: String, target: TmuxTarget) async -> String? {
         do {
             let output = try await ProcessExecutor.shared.run(tmuxPath, arguments: [
-                "capture-pane", "-t", target.targetString, "-p", "-S", "-500"
+                "capture-pane", "-t", target.targetString, "-p", "-S", "-500",
             ])
             return output.isEmpty ? nil : output
         } catch {
@@ -82,10 +82,14 @@ actor TmuxSessionMatcher {
             guard trimmed.count >= 25 else { continue }
 
             let firstChar = trimmed.first ?? " "
-            if "+-|>⏺─━═[]{}()".contains(firstChar) { continue }
-            if trimmed.hasPrefix("//") || trimmed.hasPrefix("/*") { continue }
+            if "+-|>⏺─━═[]{}()".contains(firstChar) {
+                continue
+            }
+            if trimmed.hasPrefix("//") || trimmed.hasPrefix("/*") {
+                continue
+            }
 
-            let letterCount = trimmed.filter { $0.isLetter }.count
+            let letterCount = trimmed.filter(\.isLetter).count
             guard letterCount > trimmed.count / 3 else { continue }
 
             let snippet = String(trimmed.prefix(80))
@@ -102,7 +106,9 @@ actor TmuxSessionMatcher {
         let step = snippets.count / 5
         for i in stride(from: 0, to: snippets.count, by: max(1, step)) {
             sampled.append(snippets[i])
-            if sampled.count >= 5 { break }
+            if sampled.count >= 5 {
+                break
+            }
         }
 
         return sampled
@@ -115,7 +121,7 @@ actor TmuxSessionMatcher {
         defer { try? handle.close() }
 
         let fileSize = (try? handle.seekToEnd()) ?? 0
-        let readSize: UInt64 = min(100000, fileSize)
+        let readSize: UInt64 = min(100_000, fileSize)
         if fileSize > readSize {
             try? handle.seek(toOffset: fileSize - readSize)
         } else {
@@ -123,7 +129,8 @@ actor TmuxSessionMatcher {
         }
 
         guard let data = try? handle.readToEnd(),
-              let content = String(data: data, encoding: .utf8) else {
+              let content = String(data: data, encoding: .utf8)
+        else {
             return 0
         }
 

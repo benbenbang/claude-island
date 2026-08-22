@@ -54,7 +54,7 @@ struct SoundPickerRow: View {
                 .padding(.vertical, 10)
                 .background(
                     RoundedRectangle(cornerRadius: 8)
-                        .fill(isHovered ? Color.white.opacity(0.08) : Color.clear)
+                        .fill(isHovered ? Color.white.opacity(0.08) : Color.clear),
                 )
             }
             .buttonStyle(.plain)
@@ -67,7 +67,7 @@ struct SoundPickerRow: View {
                         ForEach(NotificationSound.allCases, id: \.self) { sound in
                             SoundOptionRowInline(
                                 sound: sound,
-                                isSelected: selectedSound == sound
+                                isSelected: selectedSound == sound,
                             ) {
                                 // Play preview sound
                                 if let soundName = sound.soundName {
@@ -126,7 +126,7 @@ private struct SoundOptionRowInline: View {
             .padding(.vertical, 6)
             .background(
                 RoundedRectangle(cornerRadius: 6)
-                    .fill(isHovered ? Color.white.opacity(0.06) : Color.clear)
+                    .fill(isHovered ? Color.white.opacity(0.06) : Color.clear),
             )
         }
         .buttonStyle(.plain)
