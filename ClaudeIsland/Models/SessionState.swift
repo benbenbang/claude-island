@@ -60,7 +60,9 @@ struct SessionState: Equatable, Identifiable, Sendable {
 
     // MARK: - Identifiable
 
-    var id: String { sessionId }
+    var id: String {
+        sessionId
+    }
 
     // MARK: - Initialization
 
@@ -77,11 +79,11 @@ struct SessionState: Equatable, Identifiable, Sendable {
         subagentState: SubagentState = SubagentState(),
         conversationInfo: ConversationInfo = ConversationInfo(
             summary: nil, lastMessage: nil, lastMessageRole: nil,
-            lastToolName: nil, firstUserMessage: nil, lastUserMessageDate: nil
+            lastToolName: nil, firstUserMessage: nil, lastUserMessageDate: nil,
         ),
         needsClearReconciliation: Bool = false,
         lastActivity: Date = Date(),
-        createdAt: Date = Date()
+        createdAt: Date = Date(),
     ) {
         self.sessionId = sessionId
         self.cwd = cwd
@@ -108,7 +110,7 @@ struct SessionState: Equatable, Identifiable, Sendable {
 
     /// The active permission context, if any
     var activePermission: PermissionContext? {
-        if case .waitingForApproval(let ctx) = phase {
+        if case let .waitingForApproval(ctx) = phase {
             return ctx
         }
         return nil
@@ -118,7 +120,7 @@ struct SessionState: Equatable, Identifiable, Sendable {
 
     /// Stable identity for SwiftUI (combines PID and sessionId for animation stability)
     var stableId: String {
-        if let pid = pid {
+        if let pid {
             return "\(pid)-\(sessionId)"
         }
         return sessionId
@@ -205,7 +207,7 @@ struct ToolTracker: Equatable, Sendable {
         inProgress: [String: ToolInProgress] = [:],
         seenIds: Set<String> = [],
         lastSyncOffset: UInt64 = 0,
-        lastSyncTime: Date? = nil
+        lastSyncTime: Date? = nil,
     ) {
         self.inProgress = inProgress
         self.seenIds = seenIds
@@ -230,12 +232,12 @@ struct ToolTracker: Equatable, Sendable {
             id: id,
             name: name,
             startTime: Date(),
-            phase: .running
+            phase: .running,
         )
     }
 
     /// Complete a tool
-    nonisolated mutating func completeTool(id: String, success: Bool) {
+    nonisolated mutating func completeTool(id: String, success _: Bool) {
         inProgress.removeValue(forKey: id)
     }
 }
@@ -287,7 +289,7 @@ struct SubagentState: Equatable, Sendable {
             startTime: Date(),
             agentId: nil,
             description: description,
-            subagentTools: []
+            subagentTools: [],
         )
     }
 

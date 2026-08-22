@@ -18,11 +18,18 @@
     <string>Copyright 2025. All rights reserved.</string>
 
     <!-- Sparkle Update Configuration -->
+    <!-- DISABLED: the previous feed (https://claudeisland.com/appcast.xml) is the
+         UPSTREAM "VibeNotch" appcast, NOT ours. With it enabled, Sparkle
+         auto-replaces this app with Vibe Notch. Before re-enabling updates:
+           1. point SUFeedURL at an appcast you control,
+           2. replace SUPublicEDKey below (it is upstream's key) with your own
+              via scripts/generate-keys.sh,
+           3. set SUEnableAutomaticChecks back to true. -->
     <key>SUFeedURL</key>
-    <string>https://claudeisland.com/appcast.xml</string>
+    <string></string>
     <key>SUPublicEDKey</key>
     <string>w5NwH5KRfE7LfeZ09J8lWx3UQrWTqUbfH4HHBa1OPRk=</string>
     <key>SUEnableAutomaticChecks</key>
-    <true/>
+    <false/>
 </dict>
 </plist>

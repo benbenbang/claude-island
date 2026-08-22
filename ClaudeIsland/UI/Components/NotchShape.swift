@@ -13,7 +13,7 @@ struct NotchShape: Shape {
 
     init(
         topCornerRadius: CGFloat = 6,
-        bottomCornerRadius: CGFloat = 14
+        bottomCornerRadius: CGFloat = 14,
     ) {
         self.topCornerRadius = topCornerRadius
         self.bottomCornerRadius = bottomCornerRadius
@@ -39,72 +39,72 @@ struct NotchShape: Shape {
         path.addQuadCurve(
             to: CGPoint(
                 x: rect.minX + topCornerRadius,
-                y: rect.minY + topCornerRadius
+                y: rect.minY + topCornerRadius,
             ),
             control: CGPoint(
                 x: rect.minX + topCornerRadius,
-                y: rect.minY
-            )
+                y: rect.minY,
+            ),
         )
 
         // Left edge down to bottom-left corner
         path.addLine(
             to: CGPoint(
                 x: rect.minX + topCornerRadius,
-                y: rect.maxY - bottomCornerRadius
-            )
+                y: rect.maxY - bottomCornerRadius,
+            ),
         )
 
         // Bottom-left corner curve
         path.addQuadCurve(
             to: CGPoint(
                 x: rect.minX + topCornerRadius + bottomCornerRadius,
-                y: rect.maxY
+                y: rect.maxY,
             ),
             control: CGPoint(
                 x: rect.minX + topCornerRadius,
-                y: rect.maxY
-            )
+                y: rect.maxY,
+            ),
         )
 
         // Bottom edge
         path.addLine(
             to: CGPoint(
                 x: rect.maxX - topCornerRadius - bottomCornerRadius,
-                y: rect.maxY
-            )
+                y: rect.maxY,
+            ),
         )
 
         // Bottom-right corner curve
         path.addQuadCurve(
             to: CGPoint(
                 x: rect.maxX - topCornerRadius,
-                y: rect.maxY - bottomCornerRadius
+                y: rect.maxY - bottomCornerRadius,
             ),
             control: CGPoint(
                 x: rect.maxX - topCornerRadius,
-                y: rect.maxY
-            )
+                y: rect.maxY,
+            ),
         )
 
         // Right edge up to top-right corner
         path.addLine(
             to: CGPoint(
                 x: rect.maxX - topCornerRadius,
-                y: rect.minY + topCornerRadius
-            )
+                y: rect.minY + topCornerRadius,
+            ),
         )
 
         // Top-right corner curve (curves inward)
         path.addQuadCurve(
             to: CGPoint(
                 x: rect.maxX,
-                y: rect.minY
+                y: rect.minY,
             ),
             control: CGPoint(
                 x: rect.maxX - topCornerRadius,
-                y: rect.minY
-            )
+                y: rect.minY,
+            ),
         )
 
         // Top edge back to start

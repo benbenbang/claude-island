@@ -15,7 +15,7 @@ struct ClaudeCrabIcon: View {
 
     @State private var legPhase: Int = 0
 
-    // Timer for leg animation
+    /// Timer for leg animation
     private let legTimer = Timer.publish(every: 0.15, on: .main, in: .common).autoconnect()
 
     init(size: CGFloat = 16, color: Color = Color(red: 0.85, green: 0.47, blue: 0.34), animateLegs: Bool = false) {
@@ -26,7 +26,7 @@ struct ClaudeCrabIcon: View {
 
     var body: some View {
         Canvas { context, canvasSize in
-            let scale = size / 52.0  // Original viewBox height is 52
+            let scale = size / 52.0 // Original viewBox height is 52
             let xOffset = (canvasSize.width - 66 * scale) / 2
 
             // Left antenna
@@ -48,10 +48,10 @@ struct ClaudeCrabIcon: View {
 
             // Height offsets: positive = longer leg (down), negative = shorter leg (up)
             let legHeightOffsets: [[CGFloat]] = [
-                [3, -3, 3, -3],   // Phase 0: alternating
-                [0, 0, 0, 0],     // Phase 1: neutral
-                [-3, 3, -3, 3],   // Phase 2: alternating (opposite)
-                [0, 0, 0, 0],     // Phase 3: neutral
+                [3, -3, 3, -3], // Phase 0: alternating
+                [0, 0, 0, 0], // Phase 1: neutral
+                [-3, 3, -3, 3], // Phase 2: alternating (opposite)
+                [0, 0, 0, 0], // Phase 3: neutral
             ]
 
             let currentHeightOffsets = animateLegs ? legHeightOffsets[legPhase % 4] : [CGFloat](repeating: 0, count: 4)
@@ -92,7 +92,7 @@ struct ClaudeCrabIcon: View {
     }
 }
 
-// Pixel art permission indicator icon
+/// Pixel art permission indicator icon
 struct PermissionIndicatorIcon: View {
     let size: CGFloat
     let color: Color
@@ -102,17 +102,17 @@ struct PermissionIndicatorIcon: View {
         self.color = color
     }
 
-    // Visible pixel positions from the SVG (at 30x30 scale)
+    /// Visible pixel positions from the SVG (at 30x30 scale)
     private let pixels: [(CGFloat, CGFloat)] = [
-        (7, 7), (7, 11),           // Left column
-        (11, 3),                    // Top left
+        (7, 7), (7, 11), // Left column
+        (11, 3), // Top left
         (15, 3), (15, 19), (15, 27), // Center column
-        (19, 3), (19, 15),          // Right of center
-        (23, 7), (23, 11)           // Right column
+        (19, 3), (19, 15), // Right of center
+        (23, 7), (23, 11), // Right column
     ]
 
     var body: some View {
-        Canvas { context, canvasSize in
+        Canvas { context, _ in
             let scale = size / 30.0
             let pixelSize: CGFloat = 4 * scale
 
@@ -121,7 +121,7 @@ struct PermissionIndicatorIcon: View {
                     x: x * scale - pixelSize / 2,
                     y: y * scale - pixelSize / 2,
                     width: pixelSize,
-                    height: pixelSize
+                    height: pixelSize,
                 )
                 context.fill(Path(rect), with: .color(color))
             }
@@ -130,7 +130,7 @@ struct PermissionIndicatorIcon: View {
     }
 }
 
-// Pixel art "ready for input" indicator icon (checkmark/done shape)
+/// Pixel art "ready for input" indicator icon (checkmark/done shape)
 struct ReadyForInputIndicatorIcon: View {
     let size: CGFloat
     let color: Color
@@ -140,19 +140,19 @@ struct ReadyForInputIndicatorIcon: View {
         self.color = color
     }
 
-    // Checkmark shape pixel positions (at 30x30 scale)
+    /// Checkmark shape pixel positions (at 30x30 scale)
     private let pixels: [(CGFloat, CGFloat)] = [
-        (5, 15),                    // Start of checkmark
-        (9, 19),                    // Down stroke
-        (13, 23),                   // Bottom of checkmark
-        (17, 19),                   // Up stroke begins
-        (21, 15),                   // Up stroke
-        (25, 11),                   // Up stroke
-        (29, 7)                     // End of checkmark
+        (5, 15), // Start of checkmark
+        (9, 19), // Down stroke
+        (13, 23), // Bottom of checkmark
+        (17, 19), // Up stroke begins
+        (21, 15), // Up stroke
+        (25, 11), // Up stroke
+        (29, 7), // End of checkmark
     ]
 
     var body: some View {
-        Canvas { context, canvasSize in
+        Canvas { context, _ in
             let scale = size / 30.0
             let pixelSize: CGFloat = 4 * scale
 
@@ -161,7 +161,7 @@ struct ReadyForInputIndicatorIcon: View {
                     x: x * scale - pixelSize / 2,
                     y: y * scale - pixelSize / 2,
                     width: pixelSize,
-                    height: pixelSize
+                    height: pixelSize,
                 )
                 context.fill(Path(rect), with: .color(color))
             }
@@ -169,4 +169,3 @@ struct ReadyForInputIndicatorIcon: View {
         .frame(width: size, height: size)
     }
 }
-

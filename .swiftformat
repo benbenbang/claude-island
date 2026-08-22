@@ -6,5 +6,11 @@
 --indent 4
 --linebreaks lf
 
+# Disabled rules
+# redundantSelf strips `self.` that the compiler REQUIRES inside escaping closures
+# (DispatchSource / file-handle handlers in the watchers), which breaks the build.
+# Leave `self` references as written.
+--disable redundantSelf
+
 # Dependencies and generated sources
 --exclude .build,Pods,Carthage,**/Generated,**/*.generated.swift

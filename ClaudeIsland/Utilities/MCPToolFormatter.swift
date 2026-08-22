@@ -7,8 +7,7 @@
 
 import Foundation
 
-struct MCPToolFormatter {
-
+enum MCPToolFormatter {
     /// Tool aliases for friendlier display names
     private static let toolAliases: [String: String] = [
         "AgentOutputTool": "Await Agent",
@@ -82,11 +81,10 @@ struct MCPToolFormatter {
         for key in sortedKeys.prefix(maxArgs) {
             guard let value = input[key] else { continue }
 
-            let truncatedValue: String
-            if value.count > maxValueLength {
-                truncatedValue = String(value.prefix(maxValueLength)) + "..."
+            let truncatedValue: String = if value.count > maxValueLength {
+                String(value.prefix(maxValueLength)) + "..."
             } else {
-                truncatedValue = value
+                value
             }
 
             formattedParts.append("\(key): \"\(truncatedValue)\"")
@@ -111,22 +109,20 @@ struct MCPToolFormatter {
         for key in sortedKeys.prefix(maxArgs) {
             guard let value = input[key] else { continue }
 
-            let stringValue: String
-            if let str = value as? String {
-                stringValue = str
+            let stringValue: String = if let str = value as? String {
+                str
             } else if let num = value as? NSNumber {
-                stringValue = num.stringValue
+                num.stringValue
             } else if let bool = value as? Bool {
-                stringValue = bool ? "true" : "false"
+                bool ? "true" : "false"
             } else {
-                stringValue = String(describing: value)
+                String(describing: value)
             }
 
-            let truncatedValue: String
-            if stringValue.count > maxValueLength {
-                truncatedValue = String(stringValue.prefix(maxValueLength)) + "..."
+            let truncatedValue: String = if stringValue.count > maxValueLength {
+                String(stringValue.prefix(maxValueLength)) + "..."
             } else {
-                truncatedValue = stringValue
+                stringValue
             }
 
             formattedParts.append("\(key): \"\(truncatedValue)\"")

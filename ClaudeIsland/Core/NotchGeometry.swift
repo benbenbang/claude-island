@@ -20,7 +20,7 @@ struct NotchGeometry: Sendable {
             x: screenRect.midX - deviceNotchRect.width / 2,
             y: screenRect.maxY - deviceNotchRect.height,
             width: deviceNotchRect.width,
-            height: deviceNotchRect.height
+            height: deviceNotchRect.height,
         )
     }
 
@@ -28,13 +28,13 @@ struct NotchGeometry: Sendable {
     func openedScreenRect(for size: CGSize) -> CGRect {
         // Add padding to account for visual bounds (matches NotchViewController)
         // Bottom padding (12pt) + corner radius (24pt) + buffer = 80pt
-        let paddedWidth = size.width + 52  // Match NotchViewController width padding
-        let paddedHeight = size.height + 80  // Match NotchViewController height padding
+        let paddedWidth = size.width + 52 // Match NotchViewController width padding
+        let paddedHeight = size.height + 80 // Match NotchViewController height padding
         return CGRect(
             x: screenRect.midX - paddedWidth / 2,
             y: screenRect.maxY - paddedHeight,
             width: paddedWidth,
-            height: paddedHeight
+            height: paddedHeight,
         )
     }
 

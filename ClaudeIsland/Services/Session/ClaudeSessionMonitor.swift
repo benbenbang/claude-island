@@ -41,7 +41,7 @@ class ClaudeSessionMonitor: ObservableObject {
                     Task { @MainActor in
                         InterruptWatcherManager.shared.startWatching(
                             sessionId: event.sessionId,
-                            cwd: event.cwd
+                            cwd: event.cwd,
                         )
                     }
                 }
@@ -63,10 +63,10 @@ class ClaudeSessionMonitor: ObservableObject {
             onPermissionFailure: { sessionId, toolUseId in
                 Task {
                     await SessionStore.shared.process(
-                        .permissionSocketFailed(sessionId: sessionId, toolUseId: toolUseId)
+                        .permissionSocketFailed(sessionId: sessionId, toolUseId: toolUseId),
                     )
                 }
-            }
+            },
         )
     }
 
@@ -79,17 +79,18 @@ class ClaudeSessionMonitor: ObservableObject {
     func approvePermission(sessionId: String) {
         Task {
             guard let session = await SessionStore.shared.session(for: sessionId),
-                  let permission = session.activePermission else {
+                  let permission = session.activePermission
+            else {
                 return
             }
 
             HookSocketServer.shared.respondToPermission(
                 toolUseId: permission.toolUseId,
-                decision: "allow"
+                decision: "allow",
             )
 
             await SessionStore.shared.process(
-                .permissionApproved(sessionId: sessionId, toolUseId: permission.toolUseId)
+                .permissionApproved(sessionId: sessionId, toolUseId: permission.toolUseId),
             )
         }
     }
@@ -97,18 +98,19 @@ class ClaudeSessionMonitor: ObservableObject {
     func denyPermission(sessionId: String, reason: String?) {
         Task {
             guard let session = await SessionStore.shared.session(for: sessionId),
-                  let permission = session.activePermission else {
+                  let permission = session.activePermission
+            else {
                 return
             }
 
             HookSocketServer.shared.respondToPermission(
                 toolUseId: permission.toolUseId,
                 decision: "deny",
-                reason: reason
+                reason: reason,
             )
 
             await SessionStore.shared.process(
-                .permissionDenied(sessionId: sessionId, toolUseId: permission.toolUseId, reason: reason)
+                .permissionDenied(sessionId: sessionId, toolUseId: permission.toolUseId, reason: reason),
             )
         }
     }
@@ -124,7 +126,7 @@ class ClaudeSessionMonitor: ObservableObject {
 
     private func updateFromSessions(_ sessions: [SessionState]) {
         instances = sessions
-        pendingInstances = sessions.filter { $0.needsAttention }
+        pendingInstances = sessions.filter(\.needsAttention)
     }
 
     // MARK: - History Loading (for UI)

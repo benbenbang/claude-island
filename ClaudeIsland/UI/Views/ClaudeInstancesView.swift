@@ -59,9 +59,9 @@ struct ClaudeInstancesView: View {
     /// Approval requests share priority with processing to maintain stable ordering
     private func phasePriority(_ phase: SessionPhase) -> Int {
         switch phase {
-        case .waitingForApproval, .processing, .compacting: return 0
-        case .waitingForInput: return 1
-        case .idle, .ended: return 2
+        case .waitingForApproval, .processing, .compacting: 0
+        case .waitingForInput: 1
+        case .idle, .ended: 2
         }
     }
 
@@ -75,7 +75,7 @@ struct ClaudeInstancesView: View {
                         onChat: { openChat(session) },
                         onArchive: { archiveSession(session) },
                         onApprove: { approveSession(session) },
-                        onReject: { rejectSession(session) }
+                        onReject: { rejectSession(session) },
                     )
                     .id(session.stableId)
                 }
@@ -227,7 +227,7 @@ struct InstanceRow: View {
             Spacer(minLength: 0)
 
             // Action icons or approval buttons
-            if isWaitingForApproval && isInteractiveTool {
+            if isWaitingForApproval, isInteractiveTool {
                 // Interactive tools like AskUserQuestion - show chat + terminal buttons
                 HStack(spacing: 8) {
                     IconButton(icon: "bubble.left") {
@@ -238,7 +238,7 @@ struct InstanceRow: View {
                     if isYabaiAvailable {
                         TerminalButton(
                             isEnabled: session.isInTmux,
-                            onTap: { onFocus() }
+                            onTap: { onFocus() },
                         )
                     }
                 }
@@ -247,7 +247,7 @@ struct InstanceRow: View {
                 InlineApprovalButtons(
                     onChat: onChat,
                     onApprove: onApprove,
-                    onReject: onReject
+                    onReject: onReject,
                 )
                 .transition(.opacity.combined(with: .scale(scale: 0.9)))
             } else {
@@ -284,7 +284,7 @@ struct InstanceRow: View {
         .animation(.spring(response: 0.3, dampingFraction: 0.8), value: isWaitingForApproval)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(isHovered ? Color.white.opacity(0.06) : Color.clear)
+                .fill(isHovered ? Color.white.opacity(0.06) : Color.clear),
         )
         .onHover { isHovered = $0 }
         .task {
@@ -319,7 +319,6 @@ struct InstanceRow: View {
                 .frame(width: 6, height: 6)
         }
     }
-
 }
 
 // MARK: - Inline Approval Buttons
@@ -405,7 +404,7 @@ struct IconButton: View {
                 .frame(width: 24, height: 24)
                 .background(
                     RoundedRectangle(cornerRadius: 6)
-                        .fill(isHovered ? Color.white.opacity(0.1) : Color.clear)
+                        .fill(isHovered ? Color.white.opacity(0.1) : Color.clear),
                 )
         }
         .buttonStyle(.plain)

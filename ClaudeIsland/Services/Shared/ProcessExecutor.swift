@@ -17,14 +17,14 @@ enum ProcessExecutorError: Error, LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .executionFailed(let command, let exitCode, let stderr):
+        case let .executionFailed(command, exitCode, stderr):
             let stderrInfo = stderr.map { ", stderr: \($0)" } ?? ""
             return "Command '\(command)' failed with exit code \(exitCode)\(stderrInfo)"
-        case .invalidOutput(let command):
+        case let .invalidOutput(command):
             return "Command '\(command)' produced invalid output"
-        case .commandNotFound(let command):
+        case let .commandNotFound(command):
             return "Command not found: \(command)"
-        case .launchFailed(let command, let underlying):
+        case let .launchFailed(command, underlying):
             return "Failed to launch '\(command)': \(underlying.localizedDescription)"
         }
     }
@@ -36,7 +36,9 @@ struct ProcessResult: Sendable {
     let exitCode: Int32
     let stderr: String?
 
-    var isSuccess: Bool { exitCode == 0 }
+    var isSuccess: Bool {
+        exitCode == 0
+    }
 }
 
 /// Protocol for executing shell commands (enables testing)
@@ -60,9 +62,9 @@ actor ProcessExecutor: ProcessExecuting {
     func run(_ executable: String, arguments: [String]) async throws -> String {
         let result = await runWithResult(executable, arguments: arguments)
         switch result {
-        case .success(let processResult):
+        case let .success(processResult):
             return processResult.output
-        case .failure(let error):
+        case let .failure(error):
             throw error
         }
     }
@@ -92,7 +94,7 @@ actor ProcessExecutor: ProcessExecuting {
                 let result = ProcessResult(
                     output: stdout,
                     exitCode: process.terminationStatus,
-                    stderr: stderr
+                    stderr: stderr,
                 )
 
                 if process.terminationStatus == 0 {
@@ -102,11 +104,11 @@ actor ProcessExecutor: ProcessExecuting {
                     continuation.resume(returning: .failure(.executionFailed(
                         command: executable,
                         exitCode: process.terminationStatus,
-                        stderr: stderr
+                        stderr: stderr,
                     )))
                 }
             } catch let error as NSError {
-                if error.domain == NSCocoaErrorDomain && error.code == NSFileNoSuchFileError {
+                if error.domain == NSCocoaErrorDomain, error.code == NSFileNoSuchFileError {
                     Self.logger.error("Command not found: \(executable, privacy: .public)")
                     continuation.resume(returning: .failure(.commandNotFound(executable)))
                 } else {
@@ -148,11 +150,11 @@ actor ProcessExecutor: ProcessExecuting {
                 return .failure(.executionFailed(
                     command: executable,
                     exitCode: process.terminationStatus,
-                    stderr: stderr
+                    stderr: stderr,
                 ))
             }
         } catch let error as NSError {
-            if error.domain == NSCocoaErrorDomain && error.code == NSFileNoSuchFileError {
+            if error.domain == NSCocoaErrorDomain, error.code == NSFileNoSuchFileError {
                 Self.logger.error("Command not found: \(executable, privacy: .public)")
                 return .failure(.commandNotFound(executable))
             } else {
@@ -174,7 +176,7 @@ extension ProcessExecutor {
     func runOrNil(_ executable: String, arguments: [String]) async -> String? {
         let result = await runWithResult(executable, arguments: arguments)
         switch result {
-        case .success(let processResult):
+        case let .success(processResult):
             return processResult.output
         case .failure:
             return nil
@@ -184,10 +186,10 @@ extension ProcessExecutor {
     /// Run a command synchronously, returning nil on failure (backwards compatible)
     nonisolated func runSyncOrNil(_ executable: String, arguments: [String]) -> String? {
         switch runSync(executable, arguments: arguments) {
-        case .success(let output):
-            return output
+        case let .success(output):
+            output
         case .failure:
-            return nil
+            nil
         }
     }
 }

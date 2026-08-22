@@ -8,7 +8,7 @@
 import AppKit
 import CoreGraphics
 
-struct TerminalVisibilityDetector {
+enum TerminalVisibilityDetector {
     /// Check if any terminal window is visible on the current space
     static func isTerminalVisibleOnCurrentSpace() -> Bool {
         let options: CGWindowListOption = [.optionOnScreenOnly, .excludeDesktopElements]
@@ -33,7 +33,8 @@ struct TerminalVisibilityDetector {
     /// Check if the frontmost (active) application is a terminal
     static func isTerminalFrontmost() -> Bool {
         guard let frontmostApp = NSWorkspace.shared.frontmostApplication,
-              let bundleId = frontmostApp.bundleIdentifier else {
+              let bundleId = frontmostApp.bundleIdentifier
+        else {
             return false
         }
 
@@ -58,7 +59,8 @@ struct TerminalVisibilityDetector {
         } else {
             // For non-tmux sessions, check if the session's terminal app is frontmost
             guard let sessionTerminalPid = ProcessTreeBuilder.shared.findTerminalPid(forProcess: sessionPid, tree: tree),
-                  let frontmostApp = NSWorkspace.shared.frontmostApplication else {
+                  let frontmostApp = NSWorkspace.shared.frontmostApplication
+            else {
                 return false
             }
 

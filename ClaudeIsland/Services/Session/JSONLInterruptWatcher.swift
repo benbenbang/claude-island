@@ -34,13 +34,13 @@ class JSONLInterruptWatcher {
         "Interrupted by user",
         "interrupted by user",
         "user doesn't want to proceed",
-        "[Request interrupted by user"
+        "[Request interrupted by user",
     ]
 
     init(sessionId: String, cwd: String) {
         self.sessionId = sessionId
         let projectDir = cwd.replacingOccurrences(of: "/", with: "-")
-                            .replacingOccurrences(of: ".", with: "-")
+            .replacingOccurrences(of: ".", with: "-")
         self.filePath = NSHomeDirectory() + "/.claude/projects/" + projectDir + "/" + sessionId + ".jsonl"
     }
 
@@ -55,7 +55,8 @@ class JSONLInterruptWatcher {
         stopInternal()
 
         guard FileManager.default.fileExists(atPath: filePath),
-              let handle = FileHandle(forReadingAtPath: filePath) else {
+              let handle = FileHandle(forReadingAtPath: filePath)
+        else {
             logger.warning("Failed to open file: \(self.filePath, privacy: .public)")
             return
         }
@@ -73,7 +74,7 @@ class JSONLInterruptWatcher {
         let newSource = DispatchSource.makeFileSystemObjectSource(
             fileDescriptor: fd,
             eventMask: [.write, .extend],
-            queue: queue
+            queue: queue,
         )
 
         newSource.setEventHandler { [weak self] in
@@ -110,7 +111,8 @@ class JSONLInterruptWatcher {
         }
 
         guard let newData = try? handle.readToEnd(),
-              let newContent = String(data: newData, encoding: .utf8) else {
+              let newContent = String(data: newData, encoding: .utf8)
+        else {
             return
         }
 
@@ -121,7 +123,7 @@ class JSONLInterruptWatcher {
             if isInterruptLine(line) {
                 logger.info("Detected interrupt in session: \(self.sessionId.prefix(8), privacy: .public)")
                 DispatchQueue.main.async { [weak self] in
-                    guard let self = self else { return }
+                    guard let self else { return }
                     self.delegate?.didDetectInterrupt(sessionId: self.sessionId)
                 }
                 return
@@ -132,12 +134,13 @@ class JSONLInterruptWatcher {
     private func isInterruptLine(_ line: String) -> Bool {
         if line.contains("\"type\":\"user\"") {
             if line.contains("[Request interrupted by user]") ||
-               line.contains("[Request interrupted by user for tool use]") {
+                line.contains("[Request interrupted by user for tool use]")
+            {
                 return true
             }
         }
 
-        if line.contains("\"tool_result\"") && line.contains("\"is_error\":true") {
+        if line.contains("\"tool_result\""), line.contains("\"is_error\":true") {
             for pattern in Self.interruptContentPatterns {
                 if line.contains(pattern) {
                     return true

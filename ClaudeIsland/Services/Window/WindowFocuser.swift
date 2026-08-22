@@ -19,7 +19,7 @@ actor WindowFocuser {
 
         do {
             _ = try await ProcessExecutor.shared.run(yabaiPath, arguments: [
-                "-m", "window", "--focus", String(id)
+                "-m", "window", "--focus", String(id),
             ])
             return true
         } catch {

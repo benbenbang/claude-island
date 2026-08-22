@@ -44,7 +44,7 @@ class ChatHistoryManager: ObservableObject {
     func syncFromFile(sessionId: String, cwd: String) async {
         let messages = await ConversationParser.shared.parseFullConversation(
             sessionId: sessionId,
-            cwd: cwd
+            cwd: cwd,
         )
         let completedTools = await ConversationParser.shared.completedToolIds(for: sessionId)
         let toolResults = await ConversationParser.shared.toolResults(for: sessionId)
@@ -54,10 +54,10 @@ class ChatHistoryManager: ObservableObject {
             sessionId: sessionId,
             cwd: cwd,
             messages: messages,
-            isIncremental: false,  // Full sync
+            isIncremental: false, // Full sync
             completedToolIds: completedTools,
             toolResults: toolResults,
-            structuredResults: structuredResults
+            structuredResults: structuredResults,
         )
 
         await SessionStore.shared.process(.fileUpdated(payload))
@@ -89,7 +89,7 @@ class ChatHistoryManager: ObservableObject {
     private func filterOutSubagentTools(_ items: [ChatHistoryItem]) -> [ChatHistoryItem] {
         var subagentToolIds = Set<String>()
         for item in items {
-            if case .toolCall(let tool) = item.type, tool.name == "Task" {
+            if case let .toolCall(tool) = item.type, tool.name == "Task" {
                 for subagentTool in tool.subagentTools {
                     subagentToolIds.insert(subagentTool.id)
                 }
@@ -168,16 +168,6 @@ struct ToolCallItem: Equatable, Sendable {
         }
         return ToolStatusDisplay.completed(for: name, result: structuredResult)
     }
-
-    // Custom Equatable implementation to handle structuredResult
-    static func == (lhs: ToolCallItem, rhs: ToolCallItem) -> Bool {
-        lhs.name == rhs.name &&
-        lhs.input == rhs.input &&
-        lhs.status == rhs.status &&
-        lhs.result == rhs.result &&
-        lhs.structuredResult == rhs.structuredResult &&
-        lhs.subagentTools == rhs.subagentTools
-    }
 }
 
 enum ToolStatus: Sendable, CustomStringConvertible {
@@ -189,25 +179,25 @@ enum ToolStatus: Sendable, CustomStringConvertible {
 
     nonisolated var description: String {
         switch self {
-        case .running: return "running"
-        case .waitingForApproval: return "waitingForApproval"
-        case .success: return "success"
-        case .error: return "error"
-        case .interrupted: return "interrupted"
+        case .running: "running"
+        case .waitingForApproval: "waitingForApproval"
+        case .success: "success"
+        case .error: "error"
+        case .interrupted: "interrupted"
         }
     }
 }
 
-// Explicit nonisolated Equatable conformance to avoid actor isolation issues
+/// Explicit nonisolated Equatable conformance to avoid actor isolation issues
 extension ToolStatus: Equatable {
     nonisolated static func == (lhs: ToolStatus, rhs: ToolStatus) -> Bool {
         switch (lhs, rhs) {
-        case (.running, .running): return true
-        case (.waitingForApproval, .waitingForApproval): return true
-        case (.success, .success): return true
-        case (.error, .error): return true
-        case (.interrupted, .interrupted): return true
-        default: return false
+        case (.running, .running): true
+        case (.waitingForApproval, .waitingForApproval): true
+        case (.success, .success): true
+        case (.error, .error): true
+        case (.interrupted, .interrupted): true
+        default: false
         }
     }
 }

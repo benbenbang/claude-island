@@ -63,7 +63,7 @@ struct HookEvent: Codable, Sendable {
                 toolUseId: toolUseId ?? "",
                 toolName: tool ?? "unknown",
                 toolInput: toolInput,
-                receivedAt: Date()
+                receivedAt: Date(),
             ))
         case "waiting_for_input":
             return .waitingForInput
@@ -291,13 +291,13 @@ class HookSocketServer {
 
     /// Generate cache key from event properties
     private func cacheKey(sessionId: String, toolName: String?, toolInput: [String: AnyCodable]?) -> String {
-        let inputStr: String
-        if let input = toolInput,
-           let data = try? Self.sortedEncoder.encode(input),
-           let str = String(data: data, encoding: .utf8) {
-            inputStr = str
+        let inputStr: String = if let input = toolInput,
+                                  let data = try? Self.sortedEncoder.encode(input),
+                                  let str = String(data: data, encoding: .utf8)
+        {
+            str
         } else {
-            inputStr = "{}"
+            "{}"
         }
         return "\(sessionId):\(toolName ?? "unknown"):\(inputStr)"
     }
@@ -372,21 +372,21 @@ class HookSocketServer {
         _ = fcntl(clientSocket, F_SETFL, flags | O_NONBLOCK)
 
         var allData = Data()
-        var buffer = [UInt8](repeating: 0, count: 131072)
+        var buffer = [UInt8](repeating: 0, count: 131_072)
         var pollFd = pollfd(fd: clientSocket, events: Int16(POLLIN), revents: 0)
 
         let startTime = Date()
         while Date().timeIntervalSince(startTime) < 0.5 {
             let pollResult = poll(&pollFd, 1, 50)
 
-            if pollResult > 0 && (pollFd.revents & Int16(POLLIN)) != 0 {
+            if pollResult > 0, (pollFd.revents & Int16(POLLIN)) != 0 {
                 let bytesRead = read(clientSocket, &buffer, buffer.count)
 
                 if bytesRead > 0 {
-                    allData.append(contentsOf: buffer[0..<bytesRead])
+                    allData.append(contentsOf: buffer[0 ..< bytesRead])
                 } else if bytesRead == 0 {
                     break
-                } else if errno != EAGAIN && errno != EWOULDBLOCK {
+                } else if errno != EAGAIN, errno != EWOULDBLOCK {
                     break
                 }
             } else if pollResult == 0 {
@@ -445,9 +445,9 @@ class HookSocketServer {
                 tty: event.tty,
                 tool: event.tool,
                 toolInput: event.toolInput,
-                toolUseId: toolUseId,  // Use resolved toolUseId
+                toolUseId: toolUseId, // Use resolved toolUseId
                 notificationType: event.notificationType,
-                message: event.message
+                message: event.message,
             )
 
             let pending = PendingPermission(
@@ -455,7 +455,7 @@ class HookSocketServer {
                 toolUseId: toolUseId,
                 clientSocket: clientSocket,
                 event: updatedEvent,
-                receivedAt: Date()
+                receivedAt: Date(),
             )
             permissionsLock.lock()
             pendingPermissions[toolUseId] = pending
@@ -581,7 +581,7 @@ struct AnyCodable: Codable, @unchecked Sendable {
         } else if let string = try? container.decode(String.self) {
             value = string
         } else if let array = try? container.decode([AnyCodable].self) {
-            value = array.map { $0.value }
+            value = array.map(\.value)
         } else if let dict = try? container.decode([String: AnyCodable].self) {
             value = dict.mapValues { $0.value }
         } else {

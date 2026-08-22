@@ -1,17 +1,26 @@
 .EXPORT_ALL_VARIABLES:
 NAME = claude-island
-BUILD_DIR = build
-ARCHIVE_PATH = $(BUILD_DIR)/ClaudeIsland.xcarchive
-EXPORT_PATH = $(BUILD_DIR)/export
+OUTPUT_DIR = export
+ARCHIVE_PATH = $(OUTPUT_DIR)/ClaudeIsland.xcarchive
+EXPORT_PATH = $(OUTPUT_DIR)/export
 OUTPUT_DIR = export
 APP_NAME = Claude Island.app
+
+# Sparkle auto-update is OFF by default (the feed still points at upstream
+# VibeNotch). Build with SPARKLE=1 to compile it in, e.g. `make build SPARKLE=1`.
+SPARKLE ?= 0
+ifeq ($(SPARKLE),1)
+SPARKLE_FLAGS = SWIFT_ACTIVE_COMPILATION_CONDITIONS='$$(inherited) SPARKLE_ENABLED'
+else
+SPARKLE_FLAGS =
+endif
 
 .PHONY: build
 ## Build claude island (output copied to export/)
 build:
 	@echo "Building Claude Island... 🐙"
 	@xcodebuild -resolvePackageDependencies -scheme ClaudeIsland 2>/dev/null || true
-	@xcodebuild -scheme ClaudeIsland -configuration Release build
+	@xcodebuild -scheme ClaudeIsland -configuration Release build $(SPARKLE_FLAGS)
 	@echo "Copying app to $(OUTPUT_DIR)/ ..."
 	@mkdir -p "$(OUTPUT_DIR)"
 	@rm -rf "$(OUTPUT_DIR)/$(APP_NAME)"
@@ -38,8 +47,8 @@ show:
 ## Create exportable app bundle in build/export/
 archive:
 	@echo "Creating archive for release... 📦"
-	@rm -rf $(BUILD_DIR)
-	@mkdir -p $(BUILD_DIR)
+	@rm -rf $(OUTPUT_DIR)
+	@mkdir -p $(OUTPUT_DIR)
 	@xcodebuild -resolvePackageDependencies -scheme ClaudeIsland 2>/dev/null || true
 	@xcodebuild archive \
 		-scheme ClaudeIsland \
@@ -47,24 +56,24 @@ archive:
 		-archivePath $(ARCHIVE_PATH) \
 		-destination "generic/platform=macOS" \
 		ENABLE_HARDENED_RUNTIME=YES \
-		CODE_SIGN_STYLE=Automatic
-	@echo "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" > $(BUILD_DIR)/ExportOptions.plist
-	@echo "<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">" >> $(BUILD_DIR)/ExportOptions.plist
-	@echo "<plist version=\"1.0\">" >> $(BUILD_DIR)/ExportOptions.plist
-	@echo "<dict>" >> $(BUILD_DIR)/ExportOptions.plist
-	@echo "	<key>method</key>" >> $(BUILD_DIR)/ExportOptions.plist
-	@echo "	<string>developer-id</string>" >> $(BUILD_DIR)/ExportOptions.plist
-	@echo "	<key>destination</key>" >> $(BUILD_DIR)/ExportOptions.plist
-	@echo "	<string>export</string>" >> $(BUILD_DIR)/ExportOptions.plist
-	@echo "	<key>signingStyle</key>" >> $(BUILD_DIR)/ExportOptions.plist
-	@echo "	<string>automatic</string>" >> $(BUILD_DIR)/ExportOptions.plist
-	@echo "</dict>" >> $(BUILD_DIR)/ExportOptions.plist
-	@echo "</plist>" >> $(BUILD_DIR)/ExportOptions.plist
+		CODE_SIGN_STYLE=Automatic $(SPARKLE_FLAGS)
+	@echo "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" > $(OUTPUT_DIR)/ExportOptions.plist
+	@echo "<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">" >> $(OUTPUT_DIR)/ExportOptions.plist
+	@echo "<plist version=\"1.0\">" >> $(OUTPUT_DIR)/ExportOptions.plist
+	@echo "<dict>" >> $(OUTPUT_DIR)/ExportOptions.plist
+	@echo "	<key>method</key>" >> $(OUTPUT_DIR)/ExportOptions.plist
+	@echo "	<string>developer-id</string>" >> $(OUTPUT_DIR)/ExportOptions.plist
+	@echo "	<key>destination</key>" >> $(OUTPUT_DIR)/ExportOptions.plist
+	@echo "	<string>export</string>" >> $(OUTPUT_DIR)/ExportOptions.plist
+	@echo "	<key>signingStyle</key>" >> $(OUTPUT_DIR)/ExportOptions.plist
+	@echo "	<string>automatic</string>" >> $(OUTPUT_DIR)/ExportOptions.plist
+	@echo "</dict>" >> $(OUTPUT_DIR)/ExportOptions.plist
+	@echo "</plist>" >> $(OUTPUT_DIR)/ExportOptions.plist
 	@echo "Exporting archive..."
 	@xcodebuild -exportArchive \
 		-archivePath $(ARCHIVE_PATH) \
 		-exportPath $(EXPORT_PATH) \
-		-exportOptionsPlist $(BUILD_DIR)/ExportOptions.plist
+		-exportOptionsPlist $(OUTPUT_DIR)/ExportOptions.plist
 	@echo ""
 	@echo "✅ Archive complete!"
 	@echo "📍 App location: $(EXPORT_PATH)/Claude Island.app"
@@ -75,29 +84,29 @@ archive:
 ## Create local exportable app (no Developer ID required)
 local-archive:
 	@echo "Creating local archive... 📦"
-	@rm -rf $(BUILD_DIR)
-	@mkdir -p $(BUILD_DIR)
+	@rm -rf $(OUTPUT_DIR)
+	@mkdir -p $(OUTPUT_DIR)
 	@xcodebuild -resolvePackageDependencies -scheme ClaudeIsland 2>/dev/null || true
 	@xcodebuild archive \
 		-scheme ClaudeIsland \
 		-configuration Release \
 		-archivePath $(ARCHIVE_PATH) \
-		-destination "generic/platform=macOS"
-	@echo "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" > $(BUILD_DIR)/ExportOptions.plist
-	@echo "<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">" >> $(BUILD_DIR)/ExportOptions.plist
-	@echo "<plist version=\"1.0\">" >> $(BUILD_DIR)/ExportOptions.plist
-	@echo "<dict>" >> $(BUILD_DIR)/ExportOptions.plist
-	@echo "	<key>method</key>" >> $(BUILD_DIR)/ExportOptions.plist
-	@echo "	<string>mac-application</string>" >> $(BUILD_DIR)/ExportOptions.plist
-	@echo "	<key>signingStyle</key>" >> $(BUILD_DIR)/ExportOptions.plist
-	@echo "	<string>automatic</string>" >> $(BUILD_DIR)/ExportOptions.plist
-	@echo "</dict>" >> $(BUILD_DIR)/ExportOptions.plist
-	@echo "</plist>" >> $(BUILD_DIR)/ExportOptions.plist
+		-destination "generic/platform=macOS" $(SPARKLE_FLAGS)
+	@echo "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" > $(OUTPUT_DIR)/ExportOptions.plist
+	@echo "<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">" >> $(OUTPUT_DIR)/ExportOptions.plist
+	@echo "<plist version=\"1.0\">" >> $(OUTPUT_DIR)/ExportOptions.plist
+	@echo "<dict>" >> $(OUTPUT_DIR)/ExportOptions.plist
+	@echo "	<key>method</key>" >> $(OUTPUT_DIR)/ExportOptions.plist
+	@echo "	<string>mac-application</string>" >> $(OUTPUT_DIR)/ExportOptions.plist
+	@echo "	<key>signingStyle</key>" >> $(OUTPUT_DIR)/ExportOptions.plist
+	@echo "	<string>automatic</string>" >> $(OUTPUT_DIR)/ExportOptions.plist
+	@echo "</dict>" >> $(OUTPUT_DIR)/ExportOptions.plist
+	@echo "</plist>" >> $(OUTPUT_DIR)/ExportOptions.plist
 	@echo "Exporting archive..."
 	@xcodebuild -exportArchive \
 		-archivePath $(ARCHIVE_PATH) \
 		-exportPath $(EXPORT_PATH) \
-		-exportOptionsPlist $(BUILD_DIR)/ExportOptions.plist
+		-exportOptionsPlist $(OUTPUT_DIR)/ExportOptions.plist
 	@echo ""
 	@echo "✅ Local archive complete!"
 	@echo "📍 App location: $(EXPORT_PATH)/Claude Island.app"
@@ -108,7 +117,7 @@ clean:
 	@echo "Cleaning Xcode build artifacts..."
 	@xcodebuild clean -scheme ClaudeIsland -configuration Release 2>/dev/null || true
 	@rm -rf ~/Library/Developer/Xcode/DerivedData/ClaudeIsland-* 2>/dev/null || true
-	@rm -rf $(BUILD_DIR) 2>/dev/null || true
+	@rm -rf $(OUTPUT_DIR) 2>/dev/null || true
 	@echo "Cleaned build artifacts and caches"
 
 .DEFAULT_GOAL := help

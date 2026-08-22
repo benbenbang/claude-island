@@ -13,13 +13,6 @@ struct ProcessInfo: Sendable {
     let ppid: Int
     let command: String
     let tty: String?
-
-    nonisolated init(pid: Int, ppid: Int, command: String, tty: String?) {
-        self.pid = pid
-        self.ppid = ppid
-        self.command = command
-        self.tty = tty
-    }
 }
 
 /// Builds and queries the system process tree
@@ -59,7 +52,7 @@ struct ProcessTreeBuilder: Sendable {
         var current = pid
         var depth = 0
 
-        while current > 1 && depth < 20 {
+        while current > 1, depth < 20 {
             guard let info = tree[current] else { break }
             if info.command.lowercased().contains("tmux") {
                 return true
@@ -76,7 +69,7 @@ struct ProcessTreeBuilder: Sendable {
         var current = pid
         var depth = 0
 
-        while current > 1 && depth < 20 {
+        while current > 1, depth < 20 {
             guard let info = tree[current] else { break }
 
             if TerminalAppRegistry.isTerminal(info.command) {
@@ -95,7 +88,7 @@ struct ProcessTreeBuilder: Sendable {
         var current = targetPid
         var depth = 0
 
-        while current > 1 && depth < 50 {
+        while current > 1, depth < 50 {
             if current == ancestorPid {
                 return true
             }
@@ -135,7 +128,7 @@ struct ProcessTreeBuilder: Sendable {
         for line in output.components(separatedBy: "\n") {
             if line == "fcwd" {
                 foundCwd = true
-            } else if foundCwd && line.hasPrefix("n") {
+            } else if foundCwd, line.hasPrefix("n") {
                 return String(line.dropFirst())
             }
         }

@@ -9,16 +9,16 @@ import AppKit
 import CoreGraphics
 import SwiftUI
 
-// Corner radius constants for laptop (physical notch)
+/// Corner radius constants for laptop (physical notch)
 private let cornerRadiusInsetsLaptop = (
     opened: (top: CGFloat(19), bottom: CGFloat(24)),
-    closed: (top: CGFloat(6), bottom: CGFloat(14))
+    closed: (top: CGFloat(6), bottom: CGFloat(14)),
 )
 
-// Corner radius constants for display (menu bar height)
+/// Corner radius constants for display (menu bar height)
 private let cornerRadiusInsetsDisplay = (
     opened: (top: CGFloat(19), bottom: CGFloat(24)),
-    closed: (top: CGFloat(4), bottom: CGFloat(8))
+    closed: (top: CGFloat(4), bottom: CGFloat(8)),
 )
 
 struct NotchView: View {
@@ -28,7 +28,7 @@ struct NotchView: View {
     @ObservedObject private var updateManager = UpdateManager.shared
     @State private var previousPendingIds: Set<String> = []
     @State private var previousWaitingForInputIds: Set<String> = []
-    @State private var waitingForInputTimestamps: [String: Date] = [:]  // sessionId -> when it entered waitingForInput
+    @State private var waitingForInputTimestamps: [String: Date] = [:] // sessionId -> when it entered waitingForInput
     @State private var isVisible: Bool = false
     @State private var isHovering: Bool = false
     @State private var isBouncing: Bool = false
@@ -48,7 +48,7 @@ struct NotchView: View {
     /// Whether any Claude session is waiting for user input (done/ready state) within the display window
     private var hasWaitingForInput: Bool {
         let now = Date()
-        let displayDuration: TimeInterval = 30  // Show checkmark for 30 seconds
+        let displayDuration: TimeInterval = 30 // Show checkmark for 30 seconds
 
         return sessionMonitor.instances.contains { session in
             guard session.phase == .waitingForInput else { return false }
@@ -65,7 +65,7 @@ struct NotchView: View {
     private var closedNotchSize: CGSize {
         CGSize(
             width: viewModel.deviceNotchRect.width,
-            height: viewModel.deviceNotchRect.height
+            height: viewModel.deviceNotchRect.height,
         )
     }
 
@@ -101,9 +101,9 @@ struct NotchView: View {
     private var notchSize: CGSize {
         switch viewModel.status {
         case .closed, .popping:
-            return closedNotchSize
+            closedNotchSize
         case .opened:
-            return viewModel.openedSize
+            viewModel.openedSize
         }
     }
 
@@ -134,7 +134,7 @@ struct NotchView: View {
     private var currentNotchShape: NotchShape {
         NotchShape(
             topCornerRadius: topCornerRadius,
-            bottomCornerRadius: bottomCornerRadius
+            bottomCornerRadius: bottomCornerRadius,
         )
     }
 
@@ -151,7 +151,7 @@ struct NotchView: View {
                 notchLayout
                     .frame(
                         maxWidth: viewModel.status == .opened ? notchSize.width : nil,
-                        alignment: .top
+                        alignment: .top,
                     )
                     // IMPORTANT: Visual padding affects hit detection in NotchViewController.swift
                     // Changes to these padding values may require updating
@@ -159,8 +159,8 @@ struct NotchView: View {
                     .padding(
                         .horizontal,
                         viewModel.status == .opened
-                            ? cornerRadiusInsets.opened.top  // 19
-                            : cornerRadiusInsets.closed.bottom  // 14
+                            ? cornerRadiusInsets.opened.top // 19
+                            : cornerRadiusInsets.closed.bottom, // 14
                     )
                     .padding([.horizontal, .bottom], viewModel.status == .opened ? 12 : 0)
                     .background(.black)
@@ -173,12 +173,12 @@ struct NotchView: View {
                     }
                     .shadow(
                         color: (viewModel.status == .opened || isHovering) ? .black.opacity(0.7) : .clear,
-                        radius: 6
+                        radius: 6,
                     )
                     .frame(
                         maxWidth: viewModel.status == .opened ? notchSize.width : nil,
                         maxHeight: viewModel.status == .opened ? notchSize.height + 80 : nil,
-                        alignment: .top
+                        alignment: .top,
                     )
                     .animation(viewModel.status == .opened ? openAnimation : closeAnimation, value: viewModel.status)
                     .animation(openAnimation, value: notchSize) // Animate container size changes between content types
@@ -227,7 +227,6 @@ struct NotchView: View {
         isProcessing || hasPendingPermission || hasWaitingForInput
     }
 
-    @ViewBuilder
     private var notchLayout: some View {
         VStack(alignment: .leading, spacing: 0) {
             // Header row - always present, contains crab and spinner that persist across states
@@ -243,8 +242,8 @@ struct NotchView: View {
                             insertion: .scale(scale: 0.8, anchor: .top)
                                 .combined(with: .opacity)
                                 .animation(.smooth(duration: 0.35)),
-                            removal: .opacity.animation(.easeOut(duration: 0.15))
-                        )
+                            removal: .opacity.animation(.easeOut(duration: 0.15)),
+                        ),
                     )
             }
         }
@@ -252,7 +251,6 @@ struct NotchView: View {
 
     // MARK: - Header Row (persists across states)
 
-    @ViewBuilder
     private var headerRow: some View {
         HStack(spacing: 0) {
             // Left side - crab + optional permission indicator (visible when processing, pending, or waiting for input)
@@ -310,7 +308,6 @@ struct NotchView: View {
 
     // MARK: - Opened Header Content
 
-    @ViewBuilder
     private var openedHeaderContent: some View {
         HStack(spacing: 12) {
             // Show static crab only if not showing activity in headerRow
@@ -340,7 +337,7 @@ struct NotchView: View {
                         .contentShape(Rectangle())
 
                     // Green dot for unseen update
-                    if updateManager.hasUnseenUpdate && viewModel.contentType != .menu {
+                    if FeatureFlags.sparkleUpdatesEnabled, updateManager.hasUnseenUpdate, viewModel.contentType != .menu {
                         Circle()
                             .fill(TerminalColors.green)
                             .frame(width: 6, height: 6)
@@ -354,23 +351,22 @@ struct NotchView: View {
 
     // MARK: - Content View (Opened State)
 
-    @ViewBuilder
     private var contentView: some View {
         Group {
             switch viewModel.contentType {
             case .instances:
                 ClaudeInstancesView(
                     sessionMonitor: sessionMonitor,
-                    viewModel: viewModel
+                    viewModel: viewModel,
                 )
             case .menu:
                 NotchMenuView(viewModel: viewModel)
-            case .chat(let session):
+            case let .chat(session):
                 ChatView(
                     sessionId: session.sessionId,
                     initialSession: session,
                     sessionMonitor: sessionMonitor,
-                    viewModel: viewModel
+                    viewModel: viewModel,
                 )
             }
         }
@@ -395,9 +391,9 @@ struct NotchView: View {
 
             // Delay hiding the notch until animation completes
             // Don't hide on non-notched devices - users need a visible target
-            if viewModel.status == .closed && viewModel.hasPhysicalNotch {
+            if viewModel.status == .closed, viewModel.hasPhysicalNotch {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    if !isAnyProcessing && !hasPendingPermission && !hasWaitingForInput && viewModel.status == .closed {
+                    if !isAnyProcessing, !hasPendingPermission, !hasWaitingForInput, viewModel.status == .closed {
                         isVisible = false
                     }
                 }
@@ -405,7 +401,7 @@ struct NotchView: View {
         }
     }
 
-    private func handleStatusChange(from oldStatus: NotchStatus, to newStatus: NotchStatus) {
+    private func handleStatusChange(from _: NotchStatus, to newStatus: NotchStatus) {
         switch newStatus {
         case .opened, .popping:
             isVisible = true
@@ -417,7 +413,7 @@ struct NotchView: View {
             // Don't hide on non-notched devices - users need a visible target
             guard viewModel.hasPhysicalNotch else { return }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
-                if viewModel.status == .closed && !isAnyProcessing && !hasPendingPermission && !hasWaitingForInput && !activityCoordinator.expandingActivity.show {
+                if viewModel.status == .closed, !isAnyProcessing, !hasPendingPermission, !hasWaitingForInput, !activityCoordinator.expandingActivity.show {
                     isVisible = false
                 }
             }
@@ -425,12 +421,13 @@ struct NotchView: View {
     }
 
     private func handlePendingSessionsChange(_ sessions: [SessionState]) {
-        let currentIds = Set(sessions.map { $0.stableId })
+        let currentIds = Set(sessions.map(\.stableId))
         let newPendingIds = currentIds.subtracting(previousPendingIds)
 
-        if !newPendingIds.isEmpty &&
-           viewModel.status == .closed &&
-           !TerminalVisibilityDetector.isTerminalVisibleOnCurrentSpace() {
+        if !newPendingIds.isEmpty,
+           viewModel.status == .closed,
+           !TerminalVisibilityDetector.isTerminalVisibleOnCurrentSpace()
+        {
             viewModel.notchOpen(reason: .notification)
         }
 
@@ -440,7 +437,7 @@ struct NotchView: View {
     private func handleWaitingForInputChange(_ instances: [SessionState]) {
         // Get sessions that are now waiting for input
         let waitingForInputSessions = instances.filter { $0.phase == .waitingForInput }
-        let currentIds = Set(waitingForInputSessions.map { $0.stableId })
+        let currentIds = Set(waitingForInputSessions.map(\.stableId))
         let newWaitingIds = currentIds.subtracting(previousWaitingForInputIds)
 
         // Track timestamps for newly waiting sessions

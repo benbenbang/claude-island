@@ -30,9 +30,9 @@ enum NotchContentType: Equatable {
 
     var id: String {
         switch self {
-        case .instances: return "instances"
-        case .menu: return "menu"
-        case .chat(let session): return "chat-\(session.sessionId)"
+        case .instances: "instances"
+        case .menu: "menu"
+        case let .chat(session): "chat-\(session.sessionId)"
         }
     }
 }
@@ -57,29 +57,37 @@ class NotchViewModel: ObservableObject {
     let spacing: CGFloat = 12
     let hasPhysicalNotch: Bool
 
-    var deviceNotchRect: CGRect { geometry.deviceNotchRect }
-    var screenRect: CGRect { geometry.screenRect }
-    var windowHeight: CGFloat { geometry.windowHeight }
+    var deviceNotchRect: CGRect {
+        geometry.deviceNotchRect
+    }
+
+    var screenRect: CGRect {
+        geometry.screenRect
+    }
+
+    var windowHeight: CGFloat {
+        geometry.windowHeight
+    }
 
     /// Dynamic opened size based on content type
     var openedSize: CGSize {
         switch contentType {
         case .chat:
             // Large size for chat view
-            return CGSize(
+            CGSize(
                 width: min(screenRect.width * 0.5, 600),
-                height: 580
+                height: 580,
             )
         case .menu:
             // Compact size for settings menu
-            return CGSize(
+            CGSize(
                 width: min(screenRect.width * 0.4, 480),
-                height: 420 + screenSelector.expandedPickerHeight + soundSelector.expandedPickerHeight
+                height: 420 + screenSelector.expandedPickerHeight + soundSelector.expandedPickerHeight,
             )
         case .instances:
-            return CGSize(
+            CGSize(
                 width: min(screenRect.width * 0.4, 480),
-                height: 320
+                height: 320,
             )
         }
     }
@@ -102,7 +110,7 @@ class NotchViewModel: ObservableObject {
         self.geometry = NotchGeometry(
             deviceNotchRect: deviceNotchRect,
             screenRect: screenRect,
-            windowHeight: windowHeight
+            windowHeight: windowHeight,
         )
         self.hasPhysicalNotch = hasPhysicalNotch
         setupEventHandlers()
@@ -139,7 +147,9 @@ class NotchViewModel: ObservableObject {
 
     /// Whether we're in chat mode (sticky behavior)
     private var isInChatMode: Bool {
-        if case .chat = contentType { return true }
+        if case .chat = contentType {
+            return true
+        }
         return false
     }
 
@@ -162,9 +172,9 @@ class NotchViewModel: ObservableObject {
         hoverTimer = nil
 
         // Start hover timer to auto-expand after 1 second
-        if isHovering && (status == .closed || status == .popping) {
+        if isHovering, status == .closed || status == .popping {
             let workItem = DispatchWorkItem { [weak self] in
-                guard let self = self, self.isHovering else { return }
+                guard let self, self.isHovering else { return }
                 self.notchOpen(reason: .hover)
             }
             hoverTimer = workItem
@@ -208,7 +218,7 @@ class NotchViewModel: ObservableObject {
                 mouseEventSource: nil,
                 mouseType: .leftMouseDown,
                 mouseCursorPosition: cgPoint,
-                mouseButton: .left
+                mouseButton: .left,
             ) {
                 mouseDown.post(tap: .cghidEventTap)
             }
@@ -218,7 +228,7 @@ class NotchViewModel: ObservableObject {
                 mouseEventSource: nil,
                 mouseType: .leftMouseUp,
                 mouseCursorPosition: cgPoint,
-                mouseButton: .left
+                mouseButton: .left,
             ) {
                 mouseUp.post(tap: .cghidEventTap)
             }
@@ -240,7 +250,7 @@ class NotchViewModel: ObservableObject {
         // Restore chat session if we had one open before
         if let chatSession = currentChatSession {
             // Avoid unnecessary updates if already showing this chat
-            if case .chat(let current) = contentType, current.sessionId == chatSession.sessionId {
+            if case let .chat(current) = contentType, current.sessionId == chatSession.sessionId {
                 return
             }
             contentType = .chat(chatSession)
@@ -249,7 +259,7 @@ class NotchViewModel: ObservableObject {
 
     func notchClose() {
         // Save chat session before closing if in chat mode
-        if case .chat(let session) = contentType {
+        if case let .chat(session) = contentType {
             currentChatSession = session
         }
         status = .closed
@@ -272,7 +282,7 @@ class NotchViewModel: ObservableObject {
 
     func showChat(for session: SessionState) {
         // Avoid unnecessary updates if already showing this chat
-        if case .chat(let current) = contentType, current.sessionId == session.sessionId {
+        if case let .chat(current) = contentType, current.sessionId == session.sessionId {
             return
         }
         contentType = .chat(session)
@@ -288,7 +298,7 @@ class NotchViewModel: ObservableObject {
     func performBootAnimation() {
         notchOpen(reason: .boot)
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
-            guard let self = self, self.openReason == .boot else { return }
+            guard let self, self.openReason == .boot else { return }
             self.notchClose()
         }
     }

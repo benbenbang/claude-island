@@ -12,10 +12,10 @@ import os.log
 struct ConversationInfo: Equatable {
     let summary: String?
     let lastMessage: String?
-    let lastMessageRole: String?  // "user", "assistant", or "tool"
-    let lastToolName: String?  // Tool name if lastMessageRole is "tool"
-    let firstUserMessage: String?  // Fallback title when no summary
-    let lastUserMessageDate: Date?  // Timestamp of last user message (for stable sorting)
+    let lastMessageRole: String? // "user", "assistant", or "tool"
+    let lastToolName: String? // Tool name if lastMessageRole is "tool"
+    let firstUserMessage: String? // Fallback title when no summary
+    let lastUserMessageDate: Date? // Timestamp of last user message (for stable sorting)
 }
 
 actor ConversationParser {
@@ -39,12 +39,12 @@ actor ConversationParser {
         var lastFileOffset: UInt64 = 0
         var messages: [ChatMessage] = []
         var seenToolIds: Set<String> = []
-        var toolIdToName: [String: String] = [:]  // Map tool_use_id to tool name
-        var completedToolIds: Set<String> = []  // Tools that have received results
-        var toolResults: [String: ToolResult] = [:]  // Tool results keyed by tool_use_id
-        var structuredResults: [String: ToolResultData] = [:]  // Structured results keyed by tool_use_id
-        var lastClearOffset: UInt64 = 0  // Offset of last /clear command (0 = none or at start)
-        var clearPending: Bool = false  // True if a /clear was just detected
+        var toolIdToName: [String: String] = [:] // Map tool_use_id to tool name
+        var completedToolIds: Set<String> = [] // Tools that have received results
+        var toolResults: [String: ToolResult] = [:] // Tool results keyed by tool_use_id
+        var structuredResults: [String: ToolResultData] = [:] // Structured results keyed by tool_use_id
+        var lastClearOffset: UInt64 = 0 // Offset of last /clear command (0 = none or at start)
+        var clearPending: Bool = false // True if a /clear was just detected
     }
 
     /// Parsed tool result data
@@ -63,8 +63,8 @@ actor ConversationParser {
             // Detect if this was an interrupt or rejection (various formats)
             self.isInterrupted = isError && (
                 content?.contains("Interrupted by user") == true ||
-                content?.contains("interrupted by user") == true ||
-                content?.contains("user doesn't want to proceed") == true
+                    content?.contains("interrupted by user") == true ||
+                    content?.contains("user doesn't want to proceed") == true
             )
         }
     }
@@ -78,7 +78,8 @@ actor ConversationParser {
         let fileManager = FileManager.default
         guard fileManager.fileExists(atPath: sessionFile),
               let attrs = try? fileManager.attributesOfItem(atPath: sessionFile),
-              let modDate = attrs[.modificationDate] as? Date else {
+              let modDate = attrs[.modificationDate] as? Date
+        else {
             return ConversationInfo(summary: nil, lastMessage: nil, lastMessageRole: nil, lastToolName: nil, firstUserMessage: nil, lastUserMessageDate: nil)
         }
 
@@ -87,7 +88,8 @@ actor ConversationParser {
         }
 
         guard let data = fileManager.contents(atPath: sessionFile),
-              let content = String(data: data, encoding: .utf8) else {
+              let content = String(data: data, encoding: .utf8)
+        else {
             return ConversationInfo(summary: nil, lastMessage: nil, lastMessageRole: nil, lastToolName: nil, firstUserMessage: nil, lastUserMessageDate: nil)
         }
 
@@ -113,17 +115,19 @@ actor ConversationParser {
 
         for line in lines {
             guard let lineData = line.data(using: .utf8),
-                  let json = try? JSONSerialization.jsonObject(with: lineData) as? [String: Any] else {
+                  let json = try? JSONSerialization.jsonObject(with: lineData) as? [String: Any]
+            else {
                 continue
             }
 
             let type = json["type"] as? String
             let isMeta = json["isMeta"] as? Bool ?? false
 
-            if type == "user" && !isMeta {
+            if type == "user", !isMeta {
                 if let message = json["message"] as? [String: Any],
-                   let msgContent = message["content"] as? String {
-                    if !msgContent.hasPrefix("<command-name>") && !msgContent.hasPrefix("<local-command") && !msgContent.hasPrefix("Caveat:") {
+                   let msgContent = message["content"] as? String
+                {
+                    if !msgContent.hasPrefix("<command-name>"), !msgContent.hasPrefix("<local-command"), !msgContent.hasPrefix("Caveat:") {
                         firstUserMessage = Self.truncateMessage(msgContent, maxLength: 50)
                         break
                     }
@@ -134,7 +138,8 @@ actor ConversationParser {
         var foundLastUserMessage = false
         for line in lines.reversed() {
             guard let lineData = line.data(using: .utf8),
-                  let json = try? JSONSerialization.jsonObject(with: lineData) as? [String: Any] else {
+                  let json = try? JSONSerialization.jsonObject(with: lineData) as? [String: Any]
+            else {
                 continue
             }
 
@@ -145,7 +150,7 @@ actor ConversationParser {
                     let isMeta = json["isMeta"] as? Bool ?? false
                     if !isMeta, let message = json["message"] as? [String: Any] {
                         if let msgContent = message["content"] as? String {
-                            if !msgContent.hasPrefix("<command-name>") && !msgContent.hasPrefix("<local-command") && !msgContent.hasPrefix("Caveat:") {
+                            if !msgContent.hasPrefix("<command-name>"), !msgContent.hasPrefix("<local-command"), !msgContent.hasPrefix("Caveat:") {
                                 lastMessage = msgContent
                                 lastMessageRole = type
                             }
@@ -172,11 +177,11 @@ actor ConversationParser {
                 }
             }
 
-            if !foundLastUserMessage && type == "user" {
+            if !foundLastUserMessage, type == "user" {
                 let isMeta = json["isMeta"] as? Bool ?? false
                 if !isMeta, let message = json["message"] as? [String: Any] {
                     if let msgContent = message["content"] as? String {
-                        if !msgContent.hasPrefix("<command-name>") && !msgContent.hasPrefix("<local-command") && !msgContent.hasPrefix("Caveat:") {
+                        if !msgContent.hasPrefix("<command-name>"), !msgContent.hasPrefix("<local-command"), !msgContent.hasPrefix("Caveat:") {
                             if let timestampStr = json["timestamp"] as? String {
                                 lastUserMessageDate = formatter.date(from: timestampStr)
                             }
@@ -190,7 +195,7 @@ actor ConversationParser {
                 summary = summaryText
             }
 
-            if summary != nil && lastMessage != nil && foundLastUserMessage {
+            if summary != nil, lastMessage != nil, foundLastUserMessage {
                 break
             }
         }
@@ -201,13 +206,13 @@ actor ConversationParser {
             lastMessageRole: lastMessageRole,
             lastToolName: lastToolName,
             firstUserMessage: firstUserMessage,
-            lastUserMessageDate: lastUserMessageDate
+            lastUserMessageDate: lastUserMessageDate,
         )
     }
 
     /// Format tool input for display in instance list
     private static func formatToolInput(_ input: [String: Any]?, toolName: String) -> String {
-        guard let input = input else { return "" }
+        guard let input else { return "" }
 
         switch toolName {
         case "Read", "Write", "Edit":
@@ -297,7 +302,7 @@ actor ConversationParser {
                 completedToolIds: [],
                 toolResults: [:],
                 structuredResults: [:],
-                clearDetected: false
+                clearDetected: false,
             )
         }
 
@@ -315,7 +320,7 @@ actor ConversationParser {
             completedToolIds: state.completedToolIds,
             toolResults: state.toolResults,
             structuredResults: state.structuredResults,
-            clearDetected: clearDetected
+            clearDetected: clearDetected,
         )
     }
 
@@ -348,7 +353,8 @@ actor ConversationParser {
         }
 
         guard let newData = try? fileHandle.readToEnd(),
-              let newContent = String(data: newData, encoding: .utf8) else {
+              let newContent = String(data: newData, encoding: .utf8)
+        else {
             return state.messages
         }
 
@@ -378,7 +384,8 @@ actor ConversationParser {
                 if let lineData = line.data(using: .utf8),
                    let json = try? JSONSerialization.jsonObject(with: lineData) as? [String: Any],
                    let messageDict = json["message"] as? [String: Any],
-                   let contentArray = messageDict["content"] as? [[String: Any]] {
+                   let contentArray = messageDict["content"] as? [[String: Any]]
+                {
                     let toolUseResult = json["toolUseResult"] as? [String: Any]
                     let topLevelToolName = json["toolName"] as? String
                     let stdout = toolUseResult?["stdout"] as? String
@@ -386,7 +393,8 @@ actor ConversationParser {
 
                     for block in contentArray {
                         if block["type"] as? String == "tool_result",
-                           let toolUseId = block["tool_use_id"] as? String {
+                           let toolUseId = block["tool_use_id"] as? String
+                        {
                             state.completedToolIds.insert(toolUseId)
 
                             let content = block["content"] as? String
@@ -395,17 +403,18 @@ actor ConversationParser {
                                 content: content,
                                 stdout: stdout,
                                 stderr: stderr,
-                                isError: isError
+                                isError: isError,
                             )
 
                             let toolName = topLevelToolName ?? state.toolIdToName[toolUseId]
 
-                            if let toolUseResult = toolUseResult,
-                               let name = toolName {
+                            if let toolUseResult,
+                               let name = toolName
+                            {
                                 let structured = Self.parseStructuredResult(
                                     toolName: name,
                                     toolUseResult: toolUseResult,
-                                    isError: isError
+                                    isError: isError,
                                 )
                                 state.structuredResults[toolUseId] = structured
                             }
@@ -415,7 +424,8 @@ actor ConversationParser {
             } else if line.contains("\"type\":\"user\"") || line.contains("\"type\":\"assistant\"") {
                 if let lineData = line.data(using: .utf8),
                    let json = try? JSONSerialization.jsonObject(with: lineData) as? [String: Any],
-                   let message = parseMessageLine(json, seenToolIds: &state.seenToolIds, toolIdToName: &state.toolIdToName) {
+                   let message = parseMessageLine(json, seenToolIds: &state.seenToolIds, toolIdToName: &state.toolIdToName)
+                {
                     newMessages.append(message)
                     state.messages.append(message)
                 }
@@ -428,17 +438,17 @@ actor ConversationParser {
 
     /// Get set of completed tool IDs for a session
     func completedToolIds(for sessionId: String) -> Set<String> {
-        return incrementalState[sessionId]?.completedToolIds ?? []
+        incrementalState[sessionId]?.completedToolIds ?? []
     }
 
     /// Get tool results for a session
     func toolResults(for sessionId: String) -> [String: ToolResult] {
-        return incrementalState[sessionId]?.toolResults ?? [:]
+        incrementalState[sessionId]?.toolResults ?? [:]
     }
 
     /// Get structured tool results for a session
     func structuredResults(for sessionId: String) -> [String: ToolResultData] {
-        return incrementalState[sessionId]?.structuredResults ?? [:]
+        incrementalState[sessionId]?.structuredResults ?? [:]
     }
 
     /// Reset incremental state for a session (call when reloading)
@@ -465,7 +475,8 @@ actor ConversationParser {
 
     private func parseMessageLine(_ json: [String: Any], seenToolIds: inout Set<String>, toolIdToName: inout [String: String]) -> ChatMessage? {
         guard let type = json["type"] as? String,
-              let uuid = json["uuid"] as? String else {
+              let uuid = json["uuid"] as? String
+        else {
             return nil
         }
 
@@ -545,13 +556,14 @@ actor ConversationParser {
             id: uuid,
             role: role,
             timestamp: timestamp,
-            content: blocks
+            content: blocks,
         )
     }
 
     private func parseToolUse(_ block: [String: Any]) -> ToolUseBlock? {
         guard let id = block["id"] as? String,
-              let name = block["name"] as? String else {
+              let name = block["name"] as? String
+        else {
             return nil
         }
 
@@ -577,7 +589,7 @@ actor ConversationParser {
     private static func parseStructuredResult(
         toolName: String,
         toolUseResult: [String: Any],
-        isError: Bool
+        isError _: Bool,
     ) -> ToolResultData {
         if toolName.hasPrefix("mcp__") {
             let parts = toolName.dropFirst(5).split(separator: "_", maxSplits: 2)
@@ -586,7 +598,7 @@ actor ConversationParser {
             return .mcp(MCPResult(
                 serverName: serverName,
                 toolName: mcpToolName,
-                rawResult: toolUseResult
+                rawResult: toolUseResult,
             ))
         }
 
@@ -621,8 +633,8 @@ actor ConversationParser {
             return parseExitPlanModeResult(toolUseResult)
         default:
             let content = toolUseResult["content"] as? String ??
-                          toolUseResult["stdout"] as? String ??
-                          toolUseResult["result"] as? String
+                toolUseResult["stdout"] as? String ??
+                toolUseResult["result"] as? String
             return .generic(GenericResult(rawContent: content, rawData: toolUseResult))
         }
     }
@@ -636,7 +648,7 @@ actor ConversationParser {
                 content: fileData["content"] as? String ?? "",
                 numLines: fileData["numLines"] as? Int ?? 0,
                 startLine: fileData["startLine"] as? Int ?? 1,
-                totalLines: fileData["totalLines"] as? Int ?? 0
+                totalLines: fileData["totalLines"] as? Int ?? 0,
             ))
         }
         return .read(ReadResult(
@@ -644,7 +656,7 @@ actor ConversationParser {
             content: data["content"] as? String ?? "",
             numLines: data["numLines"] as? Int ?? 0,
             startLine: data["startLine"] as? Int ?? 1,
-            totalLines: data["totalLines"] as? Int ?? 0
+            totalLines: data["totalLines"] as? Int ?? 0,
         ))
     }
 
@@ -656,7 +668,8 @@ actor ConversationParser {
                       let oldLines = patch["oldLines"] as? Int,
                       let newStart = patch["newStart"] as? Int,
                       let newLines = patch["newLines"] as? Int,
-                      let lines = patch["lines"] as? [String] else {
+                      let lines = patch["lines"] as? [String]
+                else {
                     return nil
                 }
                 return PatchHunk(
@@ -664,7 +677,7 @@ actor ConversationParser {
                     oldLines: oldLines,
                     newStart: newStart,
                     newLines: newLines,
-                    lines: lines
+                    lines: lines,
                 )
             }
         }
@@ -675,7 +688,7 @@ actor ConversationParser {
             newString: data["newString"] as? String ?? "",
             replaceAll: data["replaceAll"] as? Bool ?? false,
             userModified: data["userModified"] as? Bool ?? false,
-            structuredPatch: patches
+            structuredPatch: patches,
         ))
     }
 
@@ -690,7 +703,8 @@ actor ConversationParser {
                       let oldLines = patch["oldLines"] as? Int,
                       let newStart = patch["newStart"] as? Int,
                       let newLines = patch["newLines"] as? Int,
-                      let lines = patch["lines"] as? [String] else {
+                      let lines = patch["lines"] as? [String]
+                else {
                     return nil
                 }
                 return PatchHunk(
@@ -698,7 +712,7 @@ actor ConversationParser {
                     oldLines: oldLines,
                     newStart: newStart,
                     newLines: newLines,
-                    lines: lines
+                    lines: lines,
                 )
             }
         }
@@ -707,28 +721,27 @@ actor ConversationParser {
             type: writeType,
             filePath: data["filePath"] as? String ?? "",
             content: data["content"] as? String ?? "",
-            structuredPatch: patches
+            structuredPatch: patches,
         ))
     }
 
     private static func parseBashResult(_ data: [String: Any]) -> ToolResultData {
-        return .bash(BashResult(
+        .bash(BashResult(
             stdout: data["stdout"] as? String ?? "",
             stderr: data["stderr"] as? String ?? "",
             interrupted: data["interrupted"] as? Bool ?? false,
             isImage: data["isImage"] as? Bool ?? false,
             returnCodeInterpretation: data["returnCodeInterpretation"] as? String,
-            backgroundTaskId: data["backgroundTaskId"] as? String
+            backgroundTaskId: data["backgroundTaskId"] as? String,
         ))
     }
 
     private static func parseGrepResult(_ data: [String: Any]) -> ToolResultData {
         let modeStr = data["mode"] as? String ?? "files_with_matches"
-        let mode: GrepResult.Mode
-        switch modeStr {
-        case "content": mode = .content
-        case "count": mode = .count
-        default: mode = .filesWithMatches
+        let mode: GrepResult.Mode = switch modeStr {
+        case "content": .content
+        case "count": .count
+        default: .filesWithMatches
         }
 
         return .grep(GrepResult(
@@ -737,61 +750,62 @@ actor ConversationParser {
             numFiles: data["numFiles"] as? Int ?? 0,
             content: data["content"] as? String,
             numLines: data["numLines"] as? Int,
-            appliedLimit: data["appliedLimit"] as? Int
+            appliedLimit: data["appliedLimit"] as? Int,
         ))
     }
 
     private static func parseGlobResult(_ data: [String: Any]) -> ToolResultData {
-        return .glob(GlobResult(
+        .glob(GlobResult(
             filenames: data["filenames"] as? [String] ?? [],
             durationMs: data["durationMs"] as? Int ?? 0,
             numFiles: data["numFiles"] as? Int ?? 0,
-            truncated: data["truncated"] as? Bool ?? false
+            truncated: data["truncated"] as? Bool ?? false,
         ))
     }
 
     private static func parseTodoWriteResult(_ data: [String: Any]) -> ToolResultData {
         func parseTodos(_ array: [[String: Any]]?) -> [TodoItem] {
-            guard let array = array else { return [] }
+            guard let array else { return [] }
             return array.compactMap { item -> TodoItem? in
                 guard let content = item["content"] as? String,
-                      let status = item["status"] as? String else {
+                      let status = item["status"] as? String
+                else {
                     return nil
                 }
                 return TodoItem(
                     content: content,
                     status: status,
-                    activeForm: item["activeForm"] as? String
+                    activeForm: item["activeForm"] as? String,
                 )
             }
         }
 
         return .todoWrite(TodoWriteResult(
             oldTodos: parseTodos(data["oldTodos"] as? [[String: Any]]),
-            newTodos: parseTodos(data["newTodos"] as? [[String: Any]])
+            newTodos: parseTodos(data["newTodos"] as? [[String: Any]]),
         ))
     }
 
     private static func parseTaskResult(_ data: [String: Any]) -> ToolResultData {
-        return .task(TaskResult(
+        .task(TaskResult(
             agentId: data["agentId"] as? String ?? "",
             status: data["status"] as? String ?? "unknown",
             content: data["content"] as? String ?? "",
             prompt: data["prompt"] as? String,
             totalDurationMs: data["totalDurationMs"] as? Int,
             totalTokens: data["totalTokens"] as? Int,
-            totalToolUseCount: data["totalToolUseCount"] as? Int
+            totalToolUseCount: data["totalToolUseCount"] as? Int,
         ))
     }
 
     private static func parseWebFetchResult(_ data: [String: Any]) -> ToolResultData {
-        return .webFetch(WebFetchResult(
+        .webFetch(WebFetchResult(
             url: data["url"] as? String ?? "",
             code: data["code"] as? Int ?? 0,
             codeText: data["codeText"] as? String ?? "",
             bytes: data["bytes"] as? Int ?? 0,
             durationMs: data["durationMs"] as? Int ?? 0,
-            result: data["result"] as? String ?? ""
+            result: data["result"] as? String ?? "",
         ))
     }
 
@@ -800,13 +814,14 @@ actor ConversationParser {
         if let resultsArray = data["results"] as? [[String: Any]] {
             results = resultsArray.compactMap { item -> SearchResultItem? in
                 guard let title = item["title"] as? String,
-                      let url = item["url"] as? String else {
+                      let url = item["url"] as? String
+                else {
                     return nil
                 }
                 return SearchResultItem(
                     title: title,
                     url: url,
-                    snippet: item["snippet"] as? String ?? ""
+                    snippet: item["snippet"] as? String ?? "",
                 )
             }
         }
@@ -814,7 +829,7 @@ actor ConversationParser {
         return .webSearch(WebSearchResult(
             query: data["query"] as? String ?? "",
             durationSeconds: data["durationSeconds"] as? Double ?? 0,
-            results: results
+            results: results,
         ))
     }
 
@@ -829,14 +844,14 @@ actor ConversationParser {
                         guard let label = opt["label"] as? String else { return nil }
                         return QuestionOption(
                             label: label,
-                            description: opt["description"] as? String
+                            description: opt["description"] as? String,
                         )
                     }
                 }
                 return QuestionItem(
                     question: question,
                     header: q["header"] as? String,
-                    options: options
+                    options: options,
                 )
             }
         }
@@ -848,12 +863,12 @@ actor ConversationParser {
 
         return .askUserQuestion(AskUserQuestionResult(
             questions: questions,
-            answers: answers
+            answers: answers,
         ))
     }
 
     private static func parseBashOutputResult(_ data: [String: Any]) -> ToolResultData {
-        return .bashOutput(BashOutputResult(
+        .bashOutput(BashOutputResult(
             shellId: data["shellId"] as? String ?? "",
             status: data["status"] as? String ?? "",
             stdout: data["stdout"] as? String ?? "",
@@ -862,22 +877,22 @@ actor ConversationParser {
             stderrLines: data["stderrLines"] as? Int ?? 0,
             exitCode: data["exitCode"] as? Int,
             command: data["command"] as? String,
-            timestamp: data["timestamp"] as? String
+            timestamp: data["timestamp"] as? String,
         ))
     }
 
     private static func parseKillShellResult(_ data: [String: Any]) -> ToolResultData {
-        return .killShell(KillShellResult(
+        .killShell(KillShellResult(
             shellId: data["shell_id"] as? String ?? data["shellId"] as? String ?? "",
-            message: data["message"] as? String ?? ""
+            message: data["message"] as? String ?? "",
         ))
     }
 
     private static func parseExitPlanModeResult(_ data: [String: Any]) -> ToolResultData {
-        return .exitPlanMode(ExitPlanModeResult(
+        .exitPlanMode(ExitPlanModeResult(
             filePath: data["filePath"] as? String,
             plan: data["plan"] as? String,
-            isAgent: data["isAgent"] as? Bool ?? false
+            isAgent: data["isAgent"] as? Bool ?? false,
         ))
     }
 
@@ -891,7 +906,8 @@ actor ConversationParser {
         let agentFile = NSHomeDirectory() + "/.claude/projects/" + projectDir + "/agent-" + agentId + ".jsonl"
 
         guard FileManager.default.fileExists(atPath: agentFile),
-              let content = try? String(contentsOfFile: agentFile, encoding: .utf8) else {
+              let content = try? String(contentsOfFile: agentFile, encoding: .utf8)
+        else {
             return []
         }
 
@@ -904,10 +920,12 @@ actor ConversationParser {
                let lineData = line.data(using: .utf8),
                let json = try? JSONSerialization.jsonObject(with: lineData) as? [String: Any],
                let messageDict = json["message"] as? [String: Any],
-               let contentArray = messageDict["content"] as? [[String: Any]] {
+               let contentArray = messageDict["content"] as? [[String: Any]]
+            {
                 for block in contentArray {
                     if block["type"] as? String == "tool_result",
-                       let toolUseId = block["tool_use_id"] as? String {
+                       let toolUseId = block["tool_use_id"] as? String
+                    {
                         completedToolIds.insert(toolUseId)
                     }
                 }
@@ -919,7 +937,8 @@ actor ConversationParser {
                   let lineData = line.data(using: .utf8),
                   let json = try? JSONSerialization.jsonObject(with: lineData) as? [String: Any],
                   let messageDict = json["message"] as? [String: Any],
-                  let contentArray = messageDict["content"] as? [[String: Any]] else {
+                  let contentArray = messageDict["content"] as? [[String: Any]]
+            else {
                 continue
             }
 
@@ -927,7 +946,8 @@ actor ConversationParser {
                 guard block["type"] as? String == "tool_use",
                       let toolId = block["id"] as? String,
                       let toolName = block["name"] as? String,
-                      !seenToolIds.contains(toolId) else {
+                      !seenToolIds.contains(toolId)
+                else {
                     continue
                 }
 
@@ -954,7 +974,7 @@ actor ConversationParser {
                     name: toolName,
                     input: input,
                     isCompleted: isCompleted,
-                    timestamp: timestamp
+                    timestamp: timestamp,
                 ))
             }
         }
@@ -983,7 +1003,8 @@ extension ConversationParser {
         let agentFile = NSHomeDirectory() + "/.claude/projects/" + projectDir + "/agent-" + agentId + ".jsonl"
 
         guard FileManager.default.fileExists(atPath: agentFile),
-              let content = try? String(contentsOfFile: agentFile, encoding: .utf8) else {
+              let content = try? String(contentsOfFile: agentFile, encoding: .utf8)
+        else {
             return []
         }
 
@@ -996,10 +1017,12 @@ extension ConversationParser {
                let lineData = line.data(using: .utf8),
                let json = try? JSONSerialization.jsonObject(with: lineData) as? [String: Any],
                let messageDict = json["message"] as? [String: Any],
-               let contentArray = messageDict["content"] as? [[String: Any]] {
+               let contentArray = messageDict["content"] as? [[String: Any]]
+            {
                 for block in contentArray {
                     if block["type"] as? String == "tool_result",
-                       let toolUseId = block["tool_use_id"] as? String {
+                       let toolUseId = block["tool_use_id"] as? String
+                    {
                         completedToolIds.insert(toolUseId)
                     }
                 }
@@ -1011,7 +1034,8 @@ extension ConversationParser {
                   let lineData = line.data(using: .utf8),
                   let json = try? JSONSerialization.jsonObject(with: lineData) as? [String: Any],
                   let messageDict = json["message"] as? [String: Any],
-                  let contentArray = messageDict["content"] as? [[String: Any]] else {
+                  let contentArray = messageDict["content"] as? [[String: Any]]
+            else {
                 continue
             }
 
@@ -1019,7 +1043,8 @@ extension ConversationParser {
                 guard block["type"] as? String == "tool_use",
                       let toolId = block["id"] as? String,
                       let toolName = block["name"] as? String,
-                      !seenToolIds.contains(toolId) else {
+                      !seenToolIds.contains(toolId)
+                else {
                     continue
                 }
 
@@ -1046,7 +1071,7 @@ extension ConversationParser {
                     name: toolName,
                     input: input,
                     isCompleted: isCompleted,
-                    timestamp: timestamp
+                    timestamp: timestamp,
                 ))
             }
         }
@@ -1054,4 +1079,3 @@ extension ConversationParser {
         return tools
     }
 }
-
