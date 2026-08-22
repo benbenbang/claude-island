@@ -1,0 +1,9 @@
+excluded:
+  - .build
+  - Carthage
+  - Pods
+  - "**/Generated"
+  - "**/*.generated.swift"
+
+allow_zero_lintable_files: true
+check_for_updates: false

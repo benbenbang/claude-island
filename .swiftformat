@@ -1,0 +1,10 @@
+# Swift toolchain
+--swift-version 6.2
+--language-mode 6
+
+# Whitespace
+--indent 4
+--linebreaks lf
+
+# Dependencies and generated sources
+--exclude .build,Pods,Carthage,**/Generated,**/*.generated.swift
