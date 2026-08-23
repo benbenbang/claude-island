@@ -268,3 +268,21 @@ jobs:
             "$DMG"
         env:
           GH_TOKEN: ${{ github.token }}
+
+      # Compute the DMG's SHA-256 AFTER upload (stapling changes the bytes, so this
+      # matches exactly what was published). This is the Homebrew cask `sha256` —
+      # a 64-char hash of the file, NOT the 40-char git tag/commit SHA.
+      - name: dmg sha256 (for the Homebrew cask)
+        run: |
+          DMG="${{ steps.dmg.outputs.path }}"
+          SHA=$(shasum -a 256 "$DMG" | awk '{print $1}')
+          echo "cask sha256: $SHA"
+          {
+            echo "### 🍺 Homebrew cask sha256"
+            echo ""
+            echo "For \`claudeisland.rb\` at version \`${{ steps.version.outputs.version }}\`:"
+            echo ""
+            echo '```ruby'
+            echo "  sha256 \"$SHA\""
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
