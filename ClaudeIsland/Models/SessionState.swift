@@ -78,7 +78,7 @@ struct SessionState: Equatable, Identifiable, Sendable {
         toolTracker: ToolTracker = ToolTracker(),
         subagentState: SubagentState = SubagentState(),
         conversationInfo: ConversationInfo = ConversationInfo(
-            summary: nil, lastMessage: nil, lastMessageRole: nil,
+            summary: nil, awaySummary: nil, lastMessage: nil, lastMessageRole: nil,
             lastToolName: nil, firstUserMessage: nil, lastUserMessageDate: nil,
         ),
         needsClearReconciliation: Bool = false,
@@ -126,9 +126,12 @@ struct SessionState: Equatable, Identifiable, Sendable {
         return sessionId
     }
 
-    /// Display title: summary > first user message > project name
+    /// Display title: summary > recap (away_summary) > last message > project name
     var displayTitle: String {
-        conversationInfo.summary ?? conversationInfo.firstUserMessage ?? projectName
+        conversationInfo.summary
+            ?? conversationInfo.awaySummary
+            ?? conversationInfo.lastMessage
+            ?? projectName
     }
 
     /// Best hint for matching window title
