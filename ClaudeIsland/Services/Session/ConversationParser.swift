@@ -11,6 +11,7 @@ import os.log
 
 struct ConversationInfo: Equatable {
     let summary: String?
+    let awaySummary: String? // Latest "recap" (system away_summary); title when no valid summary
     let lastMessage: String?
     let lastMessageRole: String? // "user", "assistant", or "tool"
     let lastToolName: String? // Tool name if lastMessageRole is "tool"
@@ -80,7 +81,7 @@ actor ConversationParser {
               let attrs = try? fileManager.attributesOfItem(atPath: sessionFile),
               let modDate = attrs[.modificationDate] as? Date
         else {
-            return ConversationInfo(summary: nil, lastMessage: nil, lastMessageRole: nil, lastToolName: nil, firstUserMessage: nil, lastUserMessageDate: nil)
+            return ConversationInfo(summary: nil, awaySummary: nil, lastMessage: nil, lastMessageRole: nil, lastToolName: nil, firstUserMessage: nil, lastUserMessageDate: nil)
         }
 
         if let cached = cache[sessionFile], cached.modificationDate == modDate {
@@ -90,7 +91,7 @@ actor ConversationParser {
         guard let data = fileManager.contents(atPath: sessionFile),
               let content = String(data: data, encoding: .utf8)
         else {
-            return ConversationInfo(summary: nil, lastMessage: nil, lastMessageRole: nil, lastToolName: nil, firstUserMessage: nil, lastUserMessageDate: nil)
+            return ConversationInfo(summary: nil, awaySummary: nil, lastMessage: nil, lastMessageRole: nil, lastToolName: nil, firstUserMessage: nil, lastUserMessageDate: nil)
         }
 
         let info = parseContent(content)
@@ -104,6 +105,7 @@ actor ConversationParser {
         let lines = content.components(separatedBy: "\n").filter { !$0.isEmpty }
 
         var summary: String?
+        var awaySummary: String?
         var lastMessage: String?
         var lastMessageRole: String?
         var lastToolName: String?
@@ -192,16 +194,34 @@ actor ConversationParser {
             }
 
             if summary == nil, type == "summary", let summaryText = json["summary"] as? String {
-                summary = summaryText
+                // Claude Code stores a failed background-summary generation as a
+                // summary entry whose text IS the raw API error (e.g.
+                // "API Error: 404 {...\"type\":\"error\"...}"). Skip those so the
+                // error string never becomes the conversation's display title.
+                let trimmed = summaryText.trimmingCharacters(in: .whitespacesAndNewlines)
+                let isApiError = trimmed.hasPrefix("API Error:") || trimmed.contains("\"type\":\"error\"")
+                if !isApiError {
+                    summary = summaryText
+                }
             }
 
-            if summary != nil, lastMessage != nil, foundLastUserMessage {
+            // "Recap" = Claude Code's system away_summary, written when you return to a
+            // session. The reversed scan hits the most recent one first. Used as the
+            // display title when there's no valid conversation summary.
+            if awaySummary == nil, type == "system", json["subtype"] as? String == "away_summary",
+               let content = json["content"] as? String
+            {
+                awaySummary = Self.truncateMessage(content, maxLength: 80)
+            }
+
+            if summary != nil, awaySummary != nil, lastMessage != nil, foundLastUserMessage {
                 break
             }
         }
 
         return ConversationInfo(
             summary: summary,
+            awaySummary: awaySummary,
             lastMessage: Self.truncateMessage(lastMessage, maxLength: 80),
             lastMessageRole: lastMessageRole,
             lastToolName: lastToolName,
