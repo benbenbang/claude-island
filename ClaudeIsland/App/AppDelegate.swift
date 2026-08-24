@@ -92,7 +92,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         // Gated by FeatureFlags.sparkleUpdatesEnabled (currently off — the Sparkle
-        // feed points at the upstream VibeNotch appcast; see FeatureFlags).
+        // feed points at the upstream ClaudeIsland appcast; see FeatureFlags).
         if FeatureFlags.sparkleUpdatesEnabled {
             if updater.canCheckForUpdates {
                 updater.checkForUpdates()

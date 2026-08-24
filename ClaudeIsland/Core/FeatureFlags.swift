@@ -11,8 +11,8 @@ enum FeatureFlags {
     // Sparkle auto-update (feed check, background timer, in-app update UI).
     //
     // Disabled: the inherited `SUFeedURL` / `SUPublicEDKey` in Info.plist point at
-    // the UPSTREAM "VibeNotch" appcast, so enabling Sparkle would silently replace
-    // this app with Vibe Notch. Flip to `true` ONLY after:
+    // the UPSTREAM "ClaudeIsland" appcast, so enabling Sparkle would silently replace
+    // this app with Claude Island. Flip to `true` ONLY after:
     //   1. `SUFeedURL` points at an appcast you control,
     //   2. `SUPublicEDKey` is your own key (scripts/generate-keys.sh),
     //   3. you publish your own signed appcast.xml.

@@ -56,7 +56,7 @@ class UpdateManager: NSObject, ObservableObject {
 
     func checkForUpdates() {
         // Gated by FeatureFlags.sparkleUpdatesEnabled (off = Sparkle points at the
-        // upstream VibeNotch feed; see FeatureFlags).
+        // upstream ClaudeIsland feed; see FeatureFlags).
         guard FeatureFlags.sparkleUpdatesEnabled else {
             state = .upToDate
             return
