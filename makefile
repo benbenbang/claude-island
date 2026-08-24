@@ -7,7 +7,7 @@ OUTPUT_DIR = export
 APP_NAME = Claude Island.app
 
 # Sparkle auto-update is OFF by default (the feed still points at upstream
-# VibeNotch). Build with SPARKLE=1 to compile it in, e.g. `make build SPARKLE=1`.
+# ClaudeIsland). Build with SPARKLE=1 to compile it in, e.g. `make build SPARKLE=1`.
 SPARKLE ?= 0
 ifeq ($(SPARKLE),1)
 SPARKLE_FLAGS = SWIFT_ACTIVE_COMPILATION_CONDITIONS='$$(inherited) SPARKLE_ENABLED'

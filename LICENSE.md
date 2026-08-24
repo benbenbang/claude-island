@@ -24,7 +24,7 @@ Copyright (c) 2026 benbenbang
   > you may not use this file except in compliance with the License.
   > You may obtain a copy of the License at http://apache.org
   
-  For the original license, please refer to the [LICENSE.md](https://github.com/benbenbang/claude-island/blob/main/.github/LICENSE.md) under `.github` OR the[ original repo](https://github.com/farouqaldori/vibe-notch)
+  For the original license, please refer to the [LICENSE.md](https://github.com/benbenbang/claude-island/blob/main/.github/LICENSE.md) under `.github` OR the[ original repo](https://github.com/farouqaldori/claude-island)
   
   Modifications Copyright (c) 2026 benbenbang
   Licensed under the MIT License.
