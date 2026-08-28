@@ -35,6 +35,11 @@ Download the latest release or build from source:
 xcodebuild -scheme ClaudeIsland -configuration Release build
 ```
 
+Note: the app is signed, notarized and stapled. If it's not working (malware, or permission issues) 
+
+- You may need to allow it in System Preferences > Security & Privacy.
+- You may need to run `xattr -dr com.apple.quarantine "/Applications/Claude Island.app"` in the terminal.
+                             
 ## How It Works
 
 Claude Island installs hooks into `~/.claude/hooks/` that communicate session state via a Unix socket. The app listens for events and displays them in the notch overlay.
